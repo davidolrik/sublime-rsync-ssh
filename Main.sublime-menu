@@ -1,0 +1,17 @@
+[
+{
+    "id": "project",
+    "children": [
+        {
+            "caption": "Rsync SSH",
+            "children":
+            [
+                { "command": "rsync_ssh_sync_project", "caption": "Sync project to remotes" },
+                { "caption": "-" },
+                { "command": "rsync_ssh_init_settings", "caption": "Initialize settings" }
+            ]
+
+        }
+    ]
+}
+]

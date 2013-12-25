@@ -1,0 +1,3 @@
+[
+    { "keys": ["super+shift+f12"], "command": "rsync_ssh_sync_project" }
+]
