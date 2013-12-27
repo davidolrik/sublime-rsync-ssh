@@ -21,6 +21,7 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
                 '.git*', '_build', 'blib', 'Build'
             ]
             project_data['settings']["rsync_ssh"]["options"] = [
+                "--dry-run",
                 "--delete"
             ]
 
