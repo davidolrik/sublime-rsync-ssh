@@ -20,6 +20,9 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
             project_data['settings']["rsync_ssh"]["excludes"] = [
                 '.git*', '_build', 'blib', 'Build'
             ]
+            project_data['settings']["rsync_ssh"]["options"] = [
+                "--delete"
+            ]
 
             project_data['settings']["rsync_ssh"]["remotes"] = {}
             for folder in project_data.get("folders"):
@@ -29,6 +32,7 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
                     "remote_port": 22,
                     "remote_user": os.environ['USER'],
                     "enabled": 1,
+                    "options": [],
                     "excludes": []
                 }]
 
@@ -65,6 +69,9 @@ class RsyncSshSyncProjectCommand(sublime_plugin.TextCommand):
         global_excludes = [ ".DS_Store" ]
         global_excludes.extend( rsync_ssh_settings.get("excludes", []) )
 
+        global_options = []
+        global_options.extend( rsync_ssh_settings.get("options", []) )
+
         # Iterate over all active folders
         for full_folder_path in sublime.active_window().folders():
             basename = os.path.basename(full_folder_path)
@@ -75,10 +82,14 @@ class RsyncSshSyncProjectCommand(sublime_plugin.TextCommand):
                 local_excludes = list(global_excludes)
                 local_excludes.extend(remote.get("excludes", []))
 
+                local_options = list(global_options)
+                local_options.extend(remote.get("options", []))
+
                 thread = Rsync(
                     full_folder_path,
                     remote,
                     local_excludes,
+                    local_options,
                     connect_timeout,
                     full_folder_path,
                     args.get("file_being_saved")
@@ -88,10 +99,11 @@ class RsyncSshSyncProjectCommand(sublime_plugin.TextCommand):
 
 
 class Rsync(threading.Thread):
-    def __init__(self, local_path, remote, excludes, timeout, project_path, single_file):
+    def __init__(self, local_path, remote, excludes, options, timeout, project_path, single_file):
         self.local_path   = local_path
         self.remote       = remote
         self.excludes     = excludes
+        self.options      = options
         self.timeout      = timeout
         self.project_path = project_path
         self.single_file  = single_file
@@ -154,11 +166,13 @@ class Rsync(threading.Thread):
         # Build rsync command
         rsync_command = [
             "rsync", "-v", "-zar",
-            "-e", "ssh -p " + str(self.remote.get("remote_port", "22")) + " -o ConnectTimeout="+str(self.timeout),
-            "--delete",
-            source_path,
-            self.remote.get("remote_user")+"@"+self.remote.get("remote_host")+":"+destination_path,
+            "-e", "ssh -p " + str(self.remote.get("remote_port", "22")) + " -o ConnectTimeout="+str(self.timeout)
         ]
+        rsync_command.extend(self.options)
+        rsync_command.extend([
+            source_path,
+            self.remote.get("remote_user")+"@"+self.remote.get("remote_host")+":"+destination_path
+        ])
         console_print(self.remote.get("remote_host"), " ".join(rsync_command))
 
         # Add excludes
