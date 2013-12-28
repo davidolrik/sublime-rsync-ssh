@@ -88,6 +88,8 @@ Press ⇧⌘F12 to sync all folders to all enabled remotes. - Note you must do t
 
 You install this plugin either by cloning this project directly, or by installing it via the excellent [Package Control](https://sublime.wbond.net) plugin.
 
+To get notifications upon successfull saves, please install [Terminal Notifications](https://github.com/davidolrik/sublime-terminal-notifier).
+
 ## License
 
 &copy; 2013 David Olrik <david@olrik.dk>.
