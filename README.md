@@ -12,6 +12,14 @@ This plugin will let you sync your project folders to one or more remote servers
 - Upload current file to one or more remote servers.
 - Upload one or more project folders to one or more remote server.
 
+## Requirements
+
+- You must have both `ssh`and `rsync` installed, both locally and on the remote server.
+- You must have a ssh-key that allows you to perform login without password. If you have a password on your key, then you must use `ssh-agent`. On OS X you'll need to add your keys to the Keychain by using `ssh-add -K`, once this is done OS X will use `ssh-agent` to query the Keychain for your password.
+- On the remote server, you must add your ssh public key to `~/.ssh/authorized_keys`.
+
+For more info on creating and using ssh keys please see this [nice guide](https://help.github.com/articles/set-up-git).
+
 ## Usage
 
 Note you can see everything this plugin does by viewing its output on the console.
