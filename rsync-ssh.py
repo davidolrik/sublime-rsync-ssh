@@ -125,7 +125,23 @@ class Rsync(threading.Thread):
             console_print(self.remote.get("remote_host"), self.local_path, "Skipping, host is disabled.")
             return
 
-        # Check ssh connection, and varify that rsync exists in path on the remote host
+        # What to rsync
+        source_path      = self.local_path + "/"
+        destination_path = self.remote.get("remote_path")
+
+        # Handle single file syncs
+        # Don't sync git commit message buffer
+        if self.single_file and os.path.basename(self.single_file) == "COMMIT_EDITMSG":
+            return
+        # Single within project folder, then only sync that one
+        elif self.single_file and self.single_file.startswith(self.project_path+"/"):
+            source_path = self.single_file
+            destination_path = self.remote.get("remote_path") + self.single_file.replace(self.project_path, "")
+        # Don't rsync if single file is outside project folder
+        elif self.single_file:
+            return
+
+        # Check ssh connection, and verify that rsync exists in path on the remote host
         check_command = [
             "ssh", "-p", str(self.remote.get("remote_port", "22")),
             self.remote.get("remote_user")+"@"+self.remote.get("remote_host"),
@@ -159,22 +175,6 @@ class Rsync(threading.Thread):
                 "subtitle": self.remote.get("remote_host"),
                 "message": e.output
             })
-            return
-
-        # What to rsync
-        source_path      = self.local_path + "/"
-        destination_path = self.remote.get("remote_path")
-
-        # Handle single file syncs
-        # Don't sync git commit message buffer
-        if self.single_file and os.path.basename(self.single_file) == "COMMIT_EDITMSG":
-            return
-        # Single within project folder, then only sync that one
-        elif self.single_file and self.single_file.startswith(self.project_path+"/"):
-            source_path = self.single_file
-            destination_path = self.remote.get("remote_path") + self.single_file.replace(self.project_path, "")
-        # Don't rsync if single file is outside project folder
-        elif self.single_file:
             return
 
         # Build rsync command
