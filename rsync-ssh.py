@@ -203,7 +203,7 @@ class Rsync(threading.Thread):
 
         sublime.active_window().run_command("terminal_notifier", {
             "title": "\[Rsync SSH] - OK",
-            "subtitle": self.remote.get("remote_host"),
+            "subtitle": self.remote.get("remote_host")+"["+os.path.basename(self.local_path)+"]",
             "message": "rsync of '" + os.path.basename(self.local_path) + "' complete.",
             "group": self.remote.get("remote_host")+"_"+self.remote.get("remote_path")
         })
