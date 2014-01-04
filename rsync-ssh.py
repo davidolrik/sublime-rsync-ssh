@@ -71,7 +71,7 @@ class RsyncSshSyncProjectCommand(sublime_plugin.TextCommand):
                 console_print("", "", "Aborting! - rsync ssh is not configured!")
             return
 
-        connect_timeout = rsync_ssh_settings.get("timeout", 3)
+        connect_timeout = rsync_ssh_settings.get("timeout", 5)
         global_excludes = [ ".DS_Store" ]
         global_excludes.extend( rsync_ssh_settings.get("excludes", []) )
 
