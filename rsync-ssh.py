@@ -165,8 +165,12 @@ class Rsync(threading.Thread):
         source_path      = self.local_path + "/"
         destination_path = self.remote.get("remote_path")
 
-        # If a single file is specified, then only sync that one
-        if self.single_file and self.single_file.startswith(self.project_path+"/"):
+        # Handle single file syncs
+        # Don't sync git commit message buffer
+        if self.single_file and os.path.basename(self.single_file) == "COMMIT_EDITMSG":
+            return
+        # Single within project folder, then only sync that one
+        elif self.single_file and self.single_file.startswith(self.project_path+"/"):
             source_path = self.single_file
             destination_path = self.remote.get("remote_path") + self.single_file.replace(self.project_path, "")
         # Don't rsync if single file is outside project folder
