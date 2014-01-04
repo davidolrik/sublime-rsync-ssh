@@ -1,9 +1,14 @@
 import sublime, sublime_plugin
 import subprocess, os, re, threading, time
 
-def console_print(prefix,output):
-    if prefix:
+def console_print(prefix, folder, output):
+    if prefix and folder:
+        prefix = prefix + "[" + os.path.basename(folder) + "]: "
+    elif prefix and not folder:
         prefix = prefix + ": "
+    elif not prefix and folder:
+        prefix = os.path.basename(folder) + ": "
+
     output = "[rsync-ssh] " + prefix + output.replace("\n", "\n[rsync-ssh] "+ prefix)
     print(output)
 
@@ -42,7 +47,7 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
 
         # We won't clobber an existing configuration
         else:
-            console_print("","rsync_ssh configuration already exists.")
+            console_print("","","rsync_ssh configuration already exists.")
 
         # Open configuration in new tab
         sublime.active_window().run_command("open_file",  {"file": "${project}"})
@@ -63,7 +68,7 @@ class RsyncSshSyncProjectCommand(sublime_plugin.TextCommand):
         if not rsync_ssh_settings:
             # User presse ⌘⇧12 - complain that rsync ssh is unconfigured.
             if not args.get("file_being_saved"):
-                console_print("","Aborting! - rsync ssh is not configured!")
+                console_print("", "", "Aborting! - rsync ssh is not configured!")
             return
 
         connect_timeout = rsync_ssh_settings.get("timeout", 3)
@@ -113,7 +118,7 @@ class Rsync(threading.Thread):
     def run(self):
         # Skip disabled remotes
         if not self.remote.get("enabled", 1):
-            console_print(self.remote.get("remote_host"), "Skipping, host is disabled.")
+            console_print(self.remote.get("remote_host"), self.local_path, "Skipping, host is disabled.")
             return
 
         # Check ssh connection, and varify that rsync exists in path on the remote host
@@ -126,17 +131,17 @@ class Rsync(threading.Thread):
             output = subprocess.check_output(check_command, universal_newlines=True, timeout=self.timeout, stderr=subprocess.STDOUT)
             if not re.match("rsync is", output):
                 message = "ERROR: Unable to locate rsync on "+self.remote.get("remote_host")
-                console_print(self.remote.get("remote_host"),message)
+                console_print(self.remote.get("remote_host"), self.local_path, message)
                 sublime.active_window().run_command("terminal_notifier", {
                     "title": "\[Rsync SSH] - ERROR",
                     "subtitle": self.remote.get("remote_host"),
                     "message": message,
                     "group": self.remote.get("remote_host")+":"+self.remote.get("remote_path")
                 })
-                console_print(output)
+                console_print(self.remote.get("remote_host"), self.local_path, output)
                 return
         except subprocess.TimeoutExpired as e:
-            console_print(self.remote.get("remote_host"),"ERROR: "+e.output)
+            console_print(self.remote.get("remote_host"), self.local_path, "ERROR: "+e.output)
             sublime.active_window().run_command("terminal_notifier", {
                 "title": "\[Rsync SSH] - ERROR Timeout",
                 "subtitle": self.remote.get("remote_host"),
@@ -144,7 +149,7 @@ class Rsync(threading.Thread):
             })
             return
         except subprocess.CalledProcessError as e:
-            console_print(self.remote.get("remote_host"),"ERROR: "+e.output)
+            console_print(self.remote.get("remote_host"), self.local_path, "ERROR: "+e.output)
             sublime.active_window().run_command("terminal_notifier", {
                 "title": "\[Rsync SSH] - ERROR command failed",
                 "subtitle": self.remote.get("remote_host"),
@@ -174,7 +179,7 @@ class Rsync(threading.Thread):
             source_path,
             self.remote.get("remote_user")+"@"+self.remote.get("remote_host")+":"+destination_path
         ])
-        console_print(self.remote.get("remote_host"), " ".join(rsync_command))
+        console_print(self.remote.get("remote_host"), self.local_path, " ".join(rsync_command))
 
         # Add excludes
         for exclude in set(self.excludes):
@@ -183,9 +188,9 @@ class Rsync(threading.Thread):
         # Execute rsync
         try:
             output = subprocess.check_output(rsync_command, universal_newlines=True, stderr=subprocess.STDOUT)
-            console_print(self.remote.get("remote_host"), output)
+            console_print(self.remote.get("remote_host"), self.local_path, output)
         except subprocess.CalledProcessError as e:
-            console_print(self.remote.get("remote_host"), "ERROR: "+e.output)
+            console_print(self.remote.get("remote_host"), self.local_path, "ERROR: "+e.output+"\n")
             sublime.active_window().run_command("terminal_notifier", {
                 "title": "\[Rsync SSH] - ERROR",
                 "subtitle": self.remote.get("remote_host"),
