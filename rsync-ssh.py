@@ -83,6 +83,10 @@ class RsyncSshSyncProjectCommand(sublime_plugin.TextCommand):
             basename = os.path.basename(full_folder_path)
             remotes = rsync_ssh_settings.get("remotes").get(basename)
 
+            if remotes == None:
+                console_print("", basename, "No remotes defined for "+basename)
+                continue
+
             threads = []
             for remote in remotes:
                 local_excludes = list(global_excludes)
