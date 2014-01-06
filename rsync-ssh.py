@@ -56,10 +56,10 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
 class RsyncSSHSaveCommand(sublime_plugin.EventListener):
     def on_post_save(self,view):
         # Get name of file being saved
-        view.run_command("rsync_ssh_sync_project", {"file_being_saved": view.file_name()})
+        view.run_command("rsync_ssh_sync", {"file_being_saved": view.file_name()})
 
 
-class RsyncSshSyncProjectCommand(sublime_plugin.TextCommand):
+class RsyncSshSyncCommand(sublime_plugin.TextCommand):
     def run(self, edit, **args):
         # Convert list of project folders to dict indexed by path
         rsync_ssh_settings = sublime.active_window().active_view().settings().get("rsync_ssh")
