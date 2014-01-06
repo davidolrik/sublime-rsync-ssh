@@ -12,6 +12,7 @@ def console_print(prefix, folder, output):
     output = "[rsync-ssh] " + prefix + output.replace("\n", "\n[rsync-ssh] "+ prefix)
     print(output)
 
+
 class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         # Load project configuration
@@ -53,7 +54,7 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
         sublime.active_window().run_command("open_file",  {"file": "${project}"})
 
 
-class RsyncSSHSaveCommand(sublime_plugin.EventListener):
+class RsyncSshSaveCommand(sublime_plugin.EventListener):
     def on_post_save(self,view):
         # Get name of file being saved
         view.run_command("rsync_ssh_sync", {"file_being_saved": view.file_name()})
@@ -62,27 +63,51 @@ class RsyncSSHSaveCommand(sublime_plugin.EventListener):
 class RsyncSshSyncCommand(sublime_plugin.TextCommand):
     def run(self, edit, **args):
         # Convert list of project folders to dict indexed by path
-        rsync_ssh_settings = sublime.active_window().active_view().settings().get("rsync_ssh")
+        settings = sublime.active_window().active_view().settings().get("rsync_ssh")
 
-        # Don't try to sync if rsync-ssh is unconfigured
-        if not rsync_ssh_settings:
-            # User presse ⌘⇧12 - complain that rsync ssh is unconfigured.
-            if not args.get("file_being_saved"):
-                console_print("", "", "Aborting! - rsync ssh is not configured!")
+        # Don't try to sync if User pressed ⌘⇧12 and rsync-ssh is unconfigured
+        if not settings and not args.get("file_being_saved"):
+            console_print("", "", "Aborting! - rsync ssh is not configured!")
+            return
+        # Don't try to sync when we have no settings
+        elif not settings:
             return
 
-        connect_timeout = rsync_ssh_settings.get("timeout", 5)
+        # Start command thread to keep ui responsive
+        thread = RsyncSSH(settings, args.get("file_being_saved", ""))
+        thread.start()
+
+
+class RsyncSSH(threading.Thread):
+    def __init__(self, settings, file_being_saved):
+        self.settings         = settings
+        self.file_being_saved = file_being_saved
+        threading.Thread.__init__(self)
+
+    def run(self):
+        # Don't sync git commit message buffer
+        if self.file_being_saved and os.path.basename(self.file_being_saved) == "COMMIT_EDITMSG":
+            return
+
+        # Merge settings with defaults
         global_excludes = [ ".DS_Store" ]
-        global_excludes.extend( rsync_ssh_settings.get("excludes", []) )
+        global_excludes.extend( self.settings.get("excludes", []) )
 
         global_options = []
-        global_options.extend( rsync_ssh_settings.get("options", []) )
+        global_options.extend( self.settings.get("options", []) )
 
-        # Iterate over all active folders
+        connect_timeout = self.settings.get("timeout", 5)
+
+        # Iterate over all active folders and start a sync thread for each one
         for full_folder_path in sublime.active_window().folders():
             basename = os.path.basename(full_folder_path)
-            remotes = rsync_ssh_settings.get("remotes").get(basename)
+            remotes = self.settings.get("remotes").get(basename)
 
+            # Don't sync if saving single file outside of project file
+            if self.file_being_saved and not self.file_being_saved.startswith(full_folder_path+"/"):
+                continue
+
+            # Don't sync if no remotes are defined
             if remotes == None:
                 console_print("", basename, "No remotes defined for "+basename)
                 continue
@@ -102,7 +127,7 @@ class RsyncSshSyncCommand(sublime_plugin.TextCommand):
                     local_options,
                     connect_timeout,
                     full_folder_path,
-                    args.get("file_being_saved")
+                    self.file_being_saved
                 )
                 threads.append(thread)
                 thread.start()
@@ -129,17 +154,10 @@ class Rsync(threading.Thread):
         source_path      = self.local_path + "/"
         destination_path = self.remote.get("remote_path")
 
-        # Handle single file syncs
-        # Don't sync git commit message buffer
-        if self.single_file and os.path.basename(self.single_file) == "COMMIT_EDITMSG":
-            return
-        # Single within project folder, then only sync that one
-        elif self.single_file and self.single_file.startswith(self.project_path+"/"):
+        # Handle single file syncs (save events)
+        if self.single_file and self.single_file.startswith(self.project_path+"/"):
             source_path = self.single_file
             destination_path = self.remote.get("remote_path") + self.single_file.replace(self.project_path, "")
-        # Don't rsync if single file is outside project folder
-        elif self.single_file:
-            return
 
         # Check ssh connection, and verify that rsync exists in path on the remote host
         check_command = [
