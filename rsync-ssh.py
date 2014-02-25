@@ -38,6 +38,8 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
                     "remote_path": "/home/" + os.environ['USER'] + "/Projects/" + os.path.basename(folder.get("path")),
                     "remote_port": 22,
                     "remote_user": os.environ['USER'],
+                    "remote_pre_command": "",
+                    "remote_post_command": "",
                     "enabled": 1,
                     "options": [],
                     "excludes": []
@@ -195,6 +197,28 @@ class Rsync(threading.Thread):
             })
             return
 
+        # Remote pre command
+        if self.remote.get("remote_pre_command"):
+            pre_command = [
+                "ssh", "-t", "-p", str(self.remote.get("remote_port", "22")),
+                self.remote.get("remote_user")+"@"+self.remote.get("remote_host"),
+                "PS1=/dev/null && $SHELL -l -i -c \"cd "+self.remote.get("remote_path")+" && "+self.remote.get("remote_pre_command")+"\""
+            ]
+            try:
+                console_print(self.remote.get("remote_host"), self.local_path, "Running pre command: "+self.remote.get("remote_pre_command"))
+                output = subprocess.check_output(pre_command, universal_newlines=True, stderr=subprocess.STDOUT)
+                # Remove error from bash about lack of job control
+                output = output.replace("bash: no job control in this shell\n", "")
+                if output:
+                    console_print(self.remote.get("remote_host"), self.local_path, output)
+            except subprocess.CalledProcessError as e:
+                console_print(self.remote.get("remote_host"), self.local_path, "ERROR: "+e.output+"\n")
+                sublime.active_window().run_command("terminal_notifier", {
+                    "title": "\[Rsync SSH] - ERROR",
+                    "subtitle": self.remote.get("remote_host"),
+                    "message": "pre command failed."
+                })
+
         # Build rsync command
         rsync_command = [
             "rsync", "-v", "-zar",
@@ -222,6 +246,28 @@ class Rsync(threading.Thread):
                 "subtitle": self.remote.get("remote_host"),
                 "message": "rsync failed."
             })
+
+        # Remote post command
+        if self.remote.get("remote_post_command"):
+            post_command = [
+                "ssh", "-t", "-p", str(self.remote.get("remote_port", "22")),
+                self.remote.get("remote_user")+"@"+self.remote.get("remote_host"),
+                "PS1=/dev/null && $SHELL -l -i -c \"cd "+self.remote.get("remote_path")+" && "+self.remote.get("remote_post_command")+"\""
+            ]
+            try:
+                console_print(self.remote.get("remote_host"), self.local_path, "Running post command: "+self.remote.get("remote_post_command"))
+                output = subprocess.check_output(post_command, universal_newlines=True, stderr=subprocess.STDOUT)
+                # Remove error from bash about lack of job control
+                output = output.replace("bash: no job control in this shell\n", "")
+                if output:
+                    console_print(self.remote.get("remote_host"), self.local_path, output)
+            except subprocess.CalledProcessError as e:
+                console_print(self.remote.get("remote_host"), self.local_path, "ERROR: "+e.output+"\n")
+                sublime.active_window().run_command("terminal_notifier", {
+                    "title": "\[Rsync SSH] - ERROR",
+                    "subtitle": self.remote.get("remote_host"),
+                    "message": "post command failed."
+                })
 
         sublime.active_window().run_command("terminal_notifier", {
             "title": "\[Rsync SSH] - OK",

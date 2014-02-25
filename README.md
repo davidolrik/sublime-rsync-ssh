@@ -75,7 +75,10 @@ Be aware that the `--delete` option will destroy the directoy you speficy in `re
                         "remote_host": "my-server.my-domain.tld",
                         "remote_path": "/home/you/Projects/my-project",
                         "remote_port": 22,
-                        "remote_user": "you"
+                        "remote_user": "you",
+                        # Run commands before and after rsync
+                        "remote_pre_command": "",
+                        "remote_post_command": ""
                     }
                 ]
             }
