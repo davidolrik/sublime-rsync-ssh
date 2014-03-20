@@ -98,7 +98,7 @@ class RsyncSSH(threading.Thread):
         global_options = []
         global_options.extend( self.settings.get("options", []) )
 
-        connect_timeout = self.settings.get("timeout", 5)
+        connect_timeout = self.settings.get("timeout", 10)
 
         # Iterate over all active folders and start a sync thread for each one
         for full_folder_path in sublime.active_window().folders():
