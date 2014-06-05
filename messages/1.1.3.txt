@@ -1,0 +1,4 @@
+Rsync SSH 1.1.2
+---------------
+
+- Fixed issue #2: Added '-q' to all ssh commands to suppress motd from the server. (David Jack Wange Olrik)

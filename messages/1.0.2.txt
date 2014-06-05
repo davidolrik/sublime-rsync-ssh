@@ -1,0 +1,9 @@
+Rsync SSH 1.0.2
+---------------
+
+- Don't try to sync git temporary commit message buffer. (David Jack Wange Olrik)
+- Include local folder in notification. (David Jack Wange Olrik)
+- Don't try to sync folders with no remotes. (David Jack Wange Olrik)
+- Increased default timeout. (David Jack Wange Olrik)
+- Improved logging. (David Jack Wange Olrik)
+- Updated link to ssh password guide. (David Jack Wange Olrik)

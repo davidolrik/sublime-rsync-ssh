@@ -1,0 +1,19 @@
+         ____                         ____ ____  _   _
+        |  _ \ ___ _   _ _ __   ___  / ___/ ___|| | | |
+        | |_) / __| | | | '_ \ / __| \___ \___ \| |_| |
+        |  _ <\__ \ |_| | | | | (__   ___) |__) |  _  |
+        |_| \_\___/\__, |_| |_|\___| |____/____/|_| |_|
+                   |___/
+
+For complete documentation on how to install and use Rsync SSH,
+please see:
+
+    https://sublime.wbond.net/packages/Rsync%20SSH
+
+To get notifications on OS X, please install this additional plugin:
+
+    https://sublime.wbond.net/packages/Terminal%20Notifier
+
+If you find a bug, please report it here:
+
+    https://github.com/davidolrik/sublime-rsync-ssh/issues

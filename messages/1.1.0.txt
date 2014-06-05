@@ -1,0 +1,5 @@
+Rsync SSH 1.1.0
+---------------
+
+- Added remote pre and post commands. (David Jack Wange Olrik)
+- Fixed issue #1: Fixed keybinding for full project sync. (Lee Boynton)

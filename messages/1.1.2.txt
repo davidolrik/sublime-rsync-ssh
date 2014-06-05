@@ -1,0 +1,4 @@
+Rsync SSH 1.1.2
+---------------
+
+- Increased connect timeout to 10 seconds. (David Jack Wange Olrik)

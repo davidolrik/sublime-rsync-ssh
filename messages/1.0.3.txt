@@ -1,0 +1,4 @@
+Rsync SSH 1.0.3
+---------------
+
+- Don't call sync when saving a file outside the project folders. (David Jack Wange Olrik)

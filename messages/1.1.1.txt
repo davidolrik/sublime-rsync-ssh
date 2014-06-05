@@ -1,0 +1,4 @@
+Rsync SSH 1.1.1
+---------------
+
+- Fixed "Sync Project" menu item. (David Jack Wange Olrik)

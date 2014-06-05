@@ -1,0 +1,6 @@
+Rsync SSH 1.0.4
+---------------
+
+- Improved responsiveness. (David Jack Wange Olrik)
+- Added missing Linux keybindings. (David Jack Wange Olrik)
+

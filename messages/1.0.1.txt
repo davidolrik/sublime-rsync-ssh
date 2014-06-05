@@ -1,0 +1,4 @@
+Rsync SSH 1.0.1
+---------------
+
+- Added info about requirements
