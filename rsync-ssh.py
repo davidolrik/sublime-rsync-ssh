@@ -163,7 +163,7 @@ class Rsync(threading.Thread):
 
         # Check ssh connection, and verify that rsync exists in path on the remote host
         check_command = [
-            "ssh", "-p", str(self.remote.get("remote_port", "22")),
+            "ssh", "-q", "-p", str(self.remote.get("remote_port", "22")),
             self.remote.get("remote_user")+"@"+self.remote.get("remote_host"),
             "type rsync"
         ]
@@ -200,7 +200,7 @@ class Rsync(threading.Thread):
         # Remote pre command
         if self.remote.get("remote_pre_command"):
             pre_command = [
-                "ssh", "-t", "-p", str(self.remote.get("remote_port", "22")),
+                "ssh", "-q", "-t", "-p", str(self.remote.get("remote_port", "22")),
                 self.remote.get("remote_user")+"@"+self.remote.get("remote_host"),
                 "PS1=/dev/null && $SHELL -l -i -c \"cd "+self.remote.get("remote_path")+" && "+self.remote.get("remote_pre_command")+"\""
             ]
@@ -222,7 +222,7 @@ class Rsync(threading.Thread):
         # Build rsync command
         rsync_command = [
             "rsync", "-v", "-zar",
-            "-e", "ssh -p " + str(self.remote.get("remote_port", "22")) + " -o ConnectTimeout="+str(self.timeout)
+            "-e", "ssh -q -p " + str(self.remote.get("remote_port", "22")) + " -o ConnectTimeout="+str(self.timeout)
         ]
         rsync_command.extend(self.options)
         rsync_command.extend([
@@ -250,7 +250,7 @@ class Rsync(threading.Thread):
         # Remote post command
         if self.remote.get("remote_post_command"):
             post_command = [
-                "ssh", "-t", "-p", str(self.remote.get("remote_port", "22")),
+                "ssh", "-q", "-t", "-p", str(self.remote.get("remote_port", "22")),
                 self.remote.get("remote_user")+"@"+self.remote.get("remote_host"),
                 "PS1=/dev/null && $SHELL -l -i -c \"cd "+self.remote.get("remote_path")+" && "+self.remote.get("remote_post_command")+"\""
             ]
