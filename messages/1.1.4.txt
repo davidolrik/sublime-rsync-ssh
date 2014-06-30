@@ -1,0 +1,4 @@
+Rsync SSH 1.1.4
+---------------
+
+- Fixed issue #3: Added support for absolute folders paths

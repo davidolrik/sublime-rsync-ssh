@@ -104,6 +104,8 @@ class RsyncSSH(threading.Thread):
         for full_folder_path in sublime.active_window().folders():
             basename = os.path.basename(full_folder_path)
             remotes = self.settings.get("remotes").get(basename)
+            if remotes == None:
+                remotes = self.settings.get("remotes").get(full_folder_path)
 
             # Don't sync if saving single file outside of project file
             if self.file_being_saved and not self.file_being_saved.startswith(full_folder_path+"/"):
