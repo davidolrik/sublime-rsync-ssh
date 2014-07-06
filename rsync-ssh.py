@@ -13,11 +13,12 @@ def console_print(prefix, folder, output):
     print(output)
 
 def current_user():
-	if 'USER' in os.environ:
-		return os.environ['USER']
-	elif 'USERNAME' in os.environ:
-		return os.environ['USERNAME']
-	else: return 'user'
+    if 'USER' in os.environ:
+        return os.environ['USER']
+    elif 'USERNAME' in os.environ:
+        return os.environ['USERNAME']
+    else:
+        return 'user'
 
 class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
     def run(self, edit):
