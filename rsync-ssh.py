@@ -12,6 +12,12 @@ def console_print(prefix, folder, output):
     output = "[rsync-ssh] " + prefix + output.replace("\n", "\n[rsync-ssh] "+ prefix)
     print(output)
 
+def current_user():
+	if 'USER' in os.environ:
+		return os.environ['USER']
+	elif 'USERNAME' in os.environ:
+		return os.environ['USERNAME']
+	else: return 'user'
 
 class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
     def run(self, edit):
@@ -35,9 +41,9 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
             for folder in project_data.get("folders"):
                 project_data['settings']["rsync_ssh"]["remotes"][folder.get("path")] = [{
                     "remote_host": "my-server.my-domain.tld",
-                    "remote_path": "/home/" + os.environ['USER'] + "/Projects/" + os.path.basename(folder.get("path")),
+                    "remote_path": "/home/" + current_user() + "/Projects/" + os.path.basename(folder.get("path")),
                     "remote_port": 22,
-                    "remote_user": os.environ['USER'],
+                    "remote_user": current_user(),
                     "remote_pre_command": "",
                     "remote_post_command": "",
                     "enabled": 1,
