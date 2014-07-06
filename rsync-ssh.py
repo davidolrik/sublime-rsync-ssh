@@ -24,6 +24,10 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
         # Load project configuration
         project_data = sublime.active_window().project_data()
 
+        if project_data == None:
+            console_print("", "", "Unable to initialize settings, you must have a .sublime-project file.")
+            return
+
         # If no rsync-ssh config exists, then create it
         if not project_data.get('settings',{}).get("rsync_ssh"):
             if not project_data.get('settings'):
@@ -38,6 +42,11 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
             ]
 
             project_data['settings']["rsync_ssh"]["remotes"] = {}
+
+            if project_data.get("folders") == None:
+                console_print("", "", "Unable to initialize settings, you must have at least one folder in your .sublime-project file.")
+                return
+
             for folder in project_data.get("folders"):
                 project_data['settings']["rsync_ssh"]["remotes"][folder.get("path")] = [{
                     "remote_host": "my-server.my-domain.tld",
