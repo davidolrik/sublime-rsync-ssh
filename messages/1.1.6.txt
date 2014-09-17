@@ -1,0 +1,4 @@
+Rsync SSH 1.1.6
+---------------
+
+- Fixed issue #7: Added support for localized shells on the remote server.
