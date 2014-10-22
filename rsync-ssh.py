@@ -49,9 +49,15 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
                 return
 
             for folder in project_data.get("folders"):
-                project_data['settings']["rsync_ssh"]["remotes"][folder.get("path")] = [{
+                # Handle folder named '.'
+                # User has added project file inside project folder, so we use the directory from the project file
+                path = folder.get("path")
+                if path == ".":
+                    path = os.path.basename(os.path.dirname(sublime.active_window().project_file_name()))
+
+                project_data['settings']["rsync_ssh"]["remotes"][path] = [{
                     "remote_host": "my-server.my-domain.tld",
-                    "remote_path": "/home/" + current_user() + "/Projects/" + os.path.basename(folder.get("path")),
+                    "remote_path": "/home/" + current_user() + "/Projects/" + os.path.basename(path),
                     "remote_port": 22,
                     "remote_user": current_user(),
                     "remote_pre_command": "",
