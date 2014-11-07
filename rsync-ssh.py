@@ -139,6 +139,10 @@ class RsyncSSH(threading.Thread):
                 continue
 
             threads = []
+            status_bar_message = "Rsync to " + str(len(remotes)) + " host"
+            if len(remotes) > 1:
+                status_bar_message += "s"
+            sublime.active_window().active_view().set_status("00000_rsync_ssh_status", status_bar_message)
             for remote in remotes:
                 local_excludes = list(global_excludes)
                 local_excludes.extend(remote.get("excludes", []))
@@ -157,6 +161,11 @@ class RsyncSSH(threading.Thread):
                 )
                 threads.append(thread)
                 thread.start()
+            # Wait for all threads to finish
+            [thread.join() for thread in threads]
+            sublime.active_window().active_view().set_status("00000_rsync_ssh_status", "")
+            sublime.status_message(status_bar_message + " - done.")
+            console_print("", "", "done")
 
 
 class Rsync(threading.Thread):

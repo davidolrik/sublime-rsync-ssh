@@ -1,0 +1,4 @@
+Rsync SSH 1.2.0
+---------------
+
+- Implemented issue #9: Added status bar message when starting/stopping sync.
