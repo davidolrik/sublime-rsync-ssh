@@ -34,6 +34,7 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
             if not project_data.get('settings'):
                 project_data['settings'] = {}
             project_data['settings']["rsync_ssh"] = {}
+            project_data['settings']["rsync_ssh"]["sync_on_save"] = True
             project_data['settings']["rsync_ssh"]["excludes"] = [
                 '.git*', '_build', 'blib', 'Build'
             ]
@@ -95,6 +96,9 @@ class RsyncSshSyncCommand(sublime_plugin.TextCommand):
             return
         # Don't try to sync when we have no settings
         elif not settings:
+            return
+        # Don't sync single file if user has disabled sync on save
+        elif args.get("file_being_saved") and settings.get("sync_on_save", True) == False:
             return
 
         # Start command thread to keep ui responsive
