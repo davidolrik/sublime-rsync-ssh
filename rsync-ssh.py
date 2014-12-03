@@ -239,13 +239,11 @@ class Rsync(threading.Thread):
             pre_command = [
                 "ssh", "-q", "-t", "-p", str(self.remote.get("remote_port", "22")),
                 self.remote.get("remote_user")+"@"+self.remote.get("remote_host"),
-                "PS1=/dev/null && $SHELL -l -i -c \"cd "+self.remote.get("remote_path")+" && "+self.remote.get("remote_pre_command")+"\""
+                "$SHELL -l -c \"LANG=C cd "+self.remote.get("remote_path")+" && "+self.remote.get("remote_pre_command")+"\""
             ]
             try:
                 console_print(self.remote.get("remote_host"), self.local_path, "Running pre command: "+self.remote.get("remote_pre_command"))
                 output = subprocess.check_output(pre_command, universal_newlines=True, stderr=subprocess.STDOUT)
-                # Remove error from bash about lack of job control
-                output = output.replace("bash: no job control in this shell\n", "")
                 if output:
                     console_print(self.remote.get("remote_host"), self.local_path, output)
             except subprocess.CalledProcessError as e:
@@ -289,13 +287,11 @@ class Rsync(threading.Thread):
             post_command = [
                 "ssh", "-q", "-t", "-p", str(self.remote.get("remote_port", "22")),
                 self.remote.get("remote_user")+"@"+self.remote.get("remote_host"),
-                "PS1=/dev/null && $SHELL -l -i -c \"cd "+self.remote.get("remote_path")+" && "+self.remote.get("remote_post_command")+"\""
+                "$SHELL -l -c \"LANG=C cd "+self.remote.get("remote_path")+" && "+self.remote.get("remote_post_command")+"\""
             ]
             try:
                 console_print(self.remote.get("remote_host"), self.local_path, "Running post command: "+self.remote.get("remote_post_command"))
-                output = subprocess.check_output(post_command, universal_newlines=True, stderr=subprocess.STDOUT)
-                # Remove error from bash about lack of job control
-                output = output.replace("bash: no job control in this shell\n", "")
+                output = subprocess.check_output(post_command, universal_newlines=True, stdin=subprocess.DEVNULL, stderr=subprocess.STDOUT)
                 if output:
                     console_print(self.remote.get("remote_host"), self.local_path, output)
             except subprocess.CalledProcessError as e:
