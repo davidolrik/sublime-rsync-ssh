@@ -245,6 +245,7 @@ class Rsync(threading.Thread):
                 console_print(self.remote.get("remote_host"), self.local_path, "Running pre command: "+self.remote.get("remote_pre_command"))
                 output = subprocess.check_output(pre_command, universal_newlines=True, stderr=subprocess.STDOUT)
                 if output:
+                    output = re.sub(r'\n$', "", output)
                     console_print(self.remote.get("remote_host"), self.local_path, output)
             except subprocess.CalledProcessError as e:
                 console_print(self.remote.get("remote_host"), self.local_path, "ERROR: "+e.output+"\n")
@@ -293,6 +294,7 @@ class Rsync(threading.Thread):
                 console_print(self.remote.get("remote_host"), self.local_path, "Running post command: "+self.remote.get("remote_post_command"))
                 output = subprocess.check_output(post_command, universal_newlines=True, stdin=subprocess.DEVNULL, stderr=subprocess.STDOUT)
                 if output:
+                    output = re.sub(r'\n$', "", output)
                     console_print(self.remote.get("remote_host"), self.local_path, output)
             except subprocess.CalledProcessError as e:
                 console_print(self.remote.get("remote_host"), self.local_path, "ERROR: "+e.output+"\n")
