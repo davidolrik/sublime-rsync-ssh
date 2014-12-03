@@ -205,8 +205,13 @@ class Rsync(threading.Thread):
             "type rsync"
         ]
         try:
-            output = subprocess.check_output(check_command, universal_newlines=True, timeout=self.timeout, stderr=subprocess.STDOUT)
-            if not re.match("rsync \w+ \/\w+", output):
+            output = subprocess.check_output(
+                check_command,
+                # universal_newlines=True,
+                timeout=self.timeout,
+                stderr=subprocess.STDOUT
+            ).decode('utf-8')
+            if not re.match("bash: type: rsync:", output):
                 message = "ERROR: Unable to locate rsync on "+self.remote.get("remote_host")
                 console_print(self.remote.get("remote_host"), self.local_path, message)
                 sublime.active_window().run_command("terminal_notifier", {
