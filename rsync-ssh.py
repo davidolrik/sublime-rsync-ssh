@@ -260,7 +260,10 @@ class Rsync(threading.Thread):
             "rsync", "-v", "-zar",
             "-e", "ssh -q -p " + str(self.remote.get("remote_port", "22")) + " -o ConnectTimeout="+str(self.timeout)
         ]
-        rsync_command.extend(self.options)
+        # We allow options to be specified as "--foo bar" in the config so we need to split all options on first space after the option name
+        for option in self.options:
+            rsync_command.extend( option.split(" ", 1) )
+
         rsync_command.extend([
             source_path,
             self.remote.get("remote_user")+"@"+self.remote.get("remote_host")+":"+destination_path

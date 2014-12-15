@@ -1,0 +1,5 @@
+Rsync SSH 1.3.2
+---------------
+
+- Allow rsync options with arguments to be specified as one string.
+  E.g. "--filter clear" instead of "--filter", "clear"
