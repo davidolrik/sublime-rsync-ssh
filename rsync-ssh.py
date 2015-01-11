@@ -268,11 +268,13 @@ class Rsync(threading.Thread):
             source_path,
             self.remote.get("remote_user")+"@"+self.remote.get("remote_host")+":"+destination_path
         ])
-        console_print(self.remote.get("remote_host"), self.local_path, " ".join(rsync_command))
 
         # Add excludes
         for exclude in set(self.excludes):
             rsync_command.append("--exclude="+exclude)
+
+        # Show actual rsync command in the console
+        console_print(self.remote.get("remote_host"), self.local_path, " ".join(rsync_command))
 
         # Execute rsync
         try:

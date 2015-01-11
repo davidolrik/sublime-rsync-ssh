@@ -1,0 +1,4 @@
+Rsync SSH 1.3.3
+---------------
+
+- Moved console output of rsync command to after all parameters have been added.
