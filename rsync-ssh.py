@@ -200,7 +200,7 @@ class Rsync(threading.Thread):
 
         # Check ssh connection, and verify that rsync exists in path on the remote host
         check_command = [
-            "ssh", "-q", "-p", str(self.remote.get("remote_port", "22")),
+            "ssh", "-q", "-tt", "-p", str(self.remote.get("remote_port", "22")),
             self.remote.get("remote_user")+"@"+self.remote.get("remote_host"),
             "LANG=C type rsync"
         ]
