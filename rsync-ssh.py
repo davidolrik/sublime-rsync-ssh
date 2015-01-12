@@ -200,13 +200,13 @@ class Rsync(threading.Thread):
 
         # Check ssh connection, and verify that rsync exists in path on the remote host
         check_command = [
-            "ssh", "-q", "-tt", "-p", str(self.remote.get("remote_port", "22")),
+            "ssh", "-q", "-T", "-p", str(self.remote.get("remote_port", "22")),
             self.remote.get("remote_user")+"@"+self.remote.get("remote_host"),
             "LANG=C type rsync"
         ]
         try:
             output = subprocess.check_output(check_command, universal_newlines=True, timeout=self.timeout, stderr=subprocess.STDOUT)
-            if not re.match("rsync.+\/rsync", output):
+            if not re.match("rsync.+?\/rsync", output):
                 message = "ERROR: Unable to locate rsync on "+self.remote.get("remote_host")
                 console_print(self.remote.get("remote_host"), self.local_path, message)
                 sublime.active_window().run_command("terminal_notifier", {
@@ -237,7 +237,7 @@ class Rsync(threading.Thread):
         # Remote pre command
         if self.remote.get("remote_pre_command"):
             pre_command = [
-                "ssh", "-q", "-t", "-p", str(self.remote.get("remote_port", "22")),
+                "ssh", "-q", "-T", "-p", str(self.remote.get("remote_port", "22")),
                 self.remote.get("remote_user")+"@"+self.remote.get("remote_host"),
                 "$SHELL -l -c \"LANG=C cd "+self.remote.get("remote_path")+" && "+self.remote.get("remote_pre_command")+"\""
             ]
@@ -258,7 +258,7 @@ class Rsync(threading.Thread):
         # Build rsync command
         rsync_command = [
             "rsync", "-v", "-zar",
-            "-e", "ssh -q -p " + str(self.remote.get("remote_port", "22")) + " -o ConnectTimeout="+str(self.timeout)
+            "-e", "ssh -q -T -p " + str(self.remote.get("remote_port", "22")) + " -o ConnectTimeout="+str(self.timeout)
         ]
         # We allow options to be specified as "--foo bar" in the config so we need to split all options on first space after the option name
         for option in self.options:
@@ -291,7 +291,7 @@ class Rsync(threading.Thread):
         # Remote post command
         if self.remote.get("remote_post_command"):
             post_command = [
-                "ssh", "-q", "-t", "-p", str(self.remote.get("remote_port", "22")),
+                "ssh", "-q", "-T", "-p", str(self.remote.get("remote_port", "22")),
                 self.remote.get("remote_user")+"@"+self.remote.get("remote_host"),
                 "$SHELL -l -c \"LANG=C cd "+self.remote.get("remote_path")+" && "+self.remote.get("remote_post_command")+"\""
             ]
