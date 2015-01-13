@@ -1,0 +1,5 @@
+Rsync SSH 1.3.4
+---------------
+
+- Updated all ssh commands to use -T to disable pseudo-tty allocation.
+- Made rsync detection regex more lax in order to better deal with tty errors some people are experiencing.
