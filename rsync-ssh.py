@@ -1,15 +1,15 @@
 import sublime, sublime_plugin
 import subprocess, os, re, threading, time
 
-def console_print(prefix, folder, output):
-    if prefix and folder:
-        prefix = prefix + "[" + os.path.basename(folder) + "]: "
-    elif prefix and not folder:
-        prefix = prefix + ": "
-    elif not prefix and folder:
-        prefix = os.path.basename(folder) + ": "
+def console_print(host, prefix, output):
+    if host and prefix:
+        host = host + "[" + prefix + "]: "
+    elif host and not prefix:
+        host = host + ": "
+    elif not host and prefix:
+        host = os.path.basename(prefix) + ": "
 
-    output = "[rsync-ssh] " + prefix + output.replace("\n", "\n[rsync-ssh] "+ prefix)
+    output = "[rsync-ssh] " + host + output.replace("\n", "\n[rsync-ssh] "+ host)
     print(output)
 
 def current_user():
