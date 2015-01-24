@@ -80,6 +80,26 @@ Be aware that the `--delete` option will destroy the directoy you speficy in `re
                         "remote_pre_command": "",
                         "remote_post_command": ""
                     }
+                ],
+                # Syncing a single subfolder is also supported
+                "my-project-folder/subfolder":
+                [
+                    {
+                        # You can disable any remote by setting this value to 0
+                        "enabled": 1,
+                        # Stuff we don't want rsync to copy, but just for this remote
+                        "excludes":
+                        [
+                        ],
+                        # ssh options
+                        "remote_host": "my-server.my-domain.tld",
+                        "remote_path": "/home/you/Projects/my-subfolder-target",
+                        "remote_port": 22,
+                        "remote_user": "you",
+                        # Run commands before and after rsync
+                        "remote_pre_command": "",
+                        "remote_post_command": ""
+                    }
                 ]
             }
         }

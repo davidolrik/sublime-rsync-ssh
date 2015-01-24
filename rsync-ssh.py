@@ -126,46 +126,66 @@ class RsyncSSH(threading.Thread):
 
         connect_timeout = self.settings.get("timeout", 10)
 
-        # Iterate over all active folders and start a sync thread for each one
-        for full_folder_path in sublime.active_window().folders():
-            basename = os.path.basename(full_folder_path)
-            remotes = self.settings.get("remotes").get(basename)
-            if remotes == None:
-                remotes = self.settings.get("remotes").get(full_folder_path)
+        # Get container directory
+        project_path = os.path.dirname(sublime.active_window().project_file_name())
 
-            # Don't sync if saving single file outside of project file
-            if self.file_being_saved and not self.file_being_saved.startswith(full_folder_path+"/"):
+        # Iterate over all active folders and start a sync thread for each one
+        threads = []
+        status_bar_message = "Rsyncing " + str(len(sublime.active_window().folders())) + " folder"
+        if len(sublime.active_window().folders()) > 1:
+            status_bar_message += "s"
+        sublime.active_window().active_view().set_status("00000_rsync_ssh_status", status_bar_message)
+        for folder_path_full in sublime.active_window().folders():
+            folder_path_basename = os.path.basename(folder_path_full)
+
+            prefix = folder_path_full
+            prefix = prefix.replace(project_path+"/", "")
+
+            # Don't sync if saving single file outside of project path
+            if self.file_being_saved and not self.file_being_saved.startswith(folder_path_full+"/"):
                 continue
+
+            # Build dict of matching remotes index by full local path
+            remotes = {}
+            for remote_key in self.settings.get("remotes").keys():
+                # Full path
+                if remote_key.startswith(folder_path_full):
+                    remotes[remote_key] = self.settings.get("remotes").get(remote_key)
+
+                # Just basename
+                if remote_key.startswith(folder_path_basename):
+                    remotes[project_path+"/"+remote_key] = self.settings.get("remotes").get(remote_key)
 
             # Don't sync if no remotes are defined
-            if remotes == None:
-                console_print("", basename, "No remotes defined for "+basename)
+            if len(remotes.keys()) == 0:
+                console_print("", prefix, "No remotes defined for "+folder_path_basename)
                 continue
 
-            threads = []
-            status_bar_message = "Rsync to " + str(len(remotes)) + " host"
-            if len(remotes) > 1:
-                status_bar_message += "s"
-            sublime.active_window().active_view().set_status("00000_rsync_ssh_status", status_bar_message)
-            for remote in remotes:
-                local_excludes = list(global_excludes)
-                local_excludes.extend(remote.get("excludes", []))
+            for local_path in remotes.keys():
+                # Don't sync if saving single file outside of current remotes local file path
+                if self.file_being_saved and not self.file_being_saved.startswith(local_path+"/"):
+                    continue
 
-                local_options = list(global_options)
-                local_options.extend(remote.get("options", []))
+                for remote in remotes.get(local_path):
+                    local_excludes = list(global_excludes)
+                    local_excludes.extend(remote.get("excludes", []))
 
-                thread = Rsync(
-                    full_folder_path,
-                    remote,
-                    local_excludes,
-                    local_options,
-                    connect_timeout,
-                    full_folder_path,
-                    self.file_being_saved
-                )
-                threads.append(thread)
-                thread.start()
-            # Wait for all threads to finish
+                    local_options = list(global_options)
+                    local_options.extend(remote.get("options", []))
+
+                    thread = Rsync(
+                        local_path,
+                        remote,
+                        local_excludes,
+                        local_options,
+                        connect_timeout,
+                        project_path,
+                        self.file_being_saved
+                    )
+                    threads.append(thread)
+                    thread.start()
+        # Wait for all threads to finish
+        if threads:
             [thread.join() for thread in threads]
             sublime.active_window().active_view().set_status("00000_rsync_ssh_status", "")
             sublime.status_message(status_bar_message + " - done.")
@@ -184,9 +204,13 @@ class Rsync(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
+        # Pretty path for logging
+        prefix = self.local_path
+        prefix = prefix.replace(self.project_path+"/", "")
+
         # Skip disabled remotes
         if not self.remote.get("enabled", 1):
-            console_print(self.remote.get("remote_host"), self.local_path, "Skipping, host is disabled.")
+            console_print(self.remote.get("remote_host"), prefix, "Skipping, host is disabled.")
             return
 
         # What to rsync
@@ -194,9 +218,9 @@ class Rsync(threading.Thread):
         destination_path = self.remote.get("remote_path")
 
         # Handle single file syncs (save events)
-        if self.single_file and self.single_file.startswith(self.project_path+"/"):
+        if self.single_file and self.single_file.startswith(self.local_path+"/"):
             source_path = self.single_file
-            destination_path = self.remote.get("remote_path") + self.single_file.replace(self.project_path, "")
+            destination_path = self.remote.get("remote_path") + self.single_file.replace(self.local_path, "")
 
         # Check ssh connection, and verify that rsync exists in path on the remote host
         check_command = [
@@ -208,17 +232,17 @@ class Rsync(threading.Thread):
             output = subprocess.check_output(check_command, universal_newlines=True, timeout=self.timeout, stderr=subprocess.STDOUT)
             if not re.match("rsync.+?\/rsync", output):
                 message = "ERROR: Unable to locate rsync on "+self.remote.get("remote_host")
-                console_print(self.remote.get("remote_host"), self.local_path, message)
+                console_print(self.remote.get("remote_host"), prefix, message)
                 sublime.active_window().run_command("terminal_notifier", {
                     "title": "\[Rsync SSH] - ERROR",
                     "subtitle": self.remote.get("remote_host"),
                     "message": message,
                     "group": self.remote.get("remote_host")+":"+self.remote.get("remote_path")
                 })
-                console_print(self.remote.get("remote_host"), self.local_path, output)
+                console_print(self.remote.get("remote_host"), prefix, output)
                 return
         except subprocess.TimeoutExpired as e:
-            console_print(self.remote.get("remote_host"), self.local_path, "ERROR: "+e.output)
+            console_print(self.remote.get("remote_host"), prefix, "ERROR: "+e.output)
             sublime.active_window().run_command("terminal_notifier", {
                 "title": "\[Rsync SSH] - ERROR Timeout",
                 "subtitle": self.remote.get("remote_host"),
@@ -226,7 +250,7 @@ class Rsync(threading.Thread):
             })
             return
         except subprocess.CalledProcessError as e:
-            console_print(self.remote.get("remote_host"), self.local_path, "ERROR: "+e.output)
+            console_print(self.remote.get("remote_host"), prefix, "ERROR: "+e.output)
             sublime.active_window().run_command("terminal_notifier", {
                 "title": "\[Rsync SSH] - ERROR command failed",
                 "subtitle": self.remote.get("remote_host"),
@@ -242,13 +266,13 @@ class Rsync(threading.Thread):
                 "$SHELL -l -c \"LANG=C cd "+self.remote.get("remote_path")+" && "+self.remote.get("remote_pre_command")+"\""
             ]
             try:
-                console_print(self.remote.get("remote_host"), self.local_path, "Running pre command: "+self.remote.get("remote_pre_command"))
+                console_print(self.remote.get("remote_host"), prefix, "Running pre command: "+self.remote.get("remote_pre_command"))
                 output = subprocess.check_output(pre_command, universal_newlines=True, stderr=subprocess.STDOUT)
                 if output:
                     output = re.sub(r'\n$', "", output)
-                    console_print(self.remote.get("remote_host"), self.local_path, output)
+                    console_print(self.remote.get("remote_host"), prefix, output)
             except subprocess.CalledProcessError as e:
-                console_print(self.remote.get("remote_host"), self.local_path, "ERROR: "+e.output+"\n")
+                console_print(self.remote.get("remote_host"), prefix, "ERROR: "+e.output+"\n")
                 sublime.active_window().run_command("terminal_notifier", {
                     "title": "\[Rsync SSH] - ERROR",
                     "subtitle": self.remote.get("remote_host"),
@@ -274,14 +298,14 @@ class Rsync(threading.Thread):
             rsync_command.append("--exclude="+exclude)
 
         # Show actual rsync command in the console
-        console_print(self.remote.get("remote_host"), self.local_path, " ".join(rsync_command))
+        console_print(self.remote.get("remote_host"), prefix, " ".join(rsync_command))
 
         # Execute rsync
         try:
             output = subprocess.check_output(rsync_command, universal_newlines=True, stderr=subprocess.STDOUT)
-            console_print(self.remote.get("remote_host"), self.local_path, output)
+            console_print(self.remote.get("remote_host"), prefix, output)
         except subprocess.CalledProcessError as e:
-            console_print(self.remote.get("remote_host"), self.local_path, "ERROR: "+e.output+"\n")
+            console_print(self.remote.get("remote_host"), prefix, "ERROR: "+e.output+"\n")
             sublime.active_window().run_command("terminal_notifier", {
                 "title": "\[Rsync SSH] - ERROR",
                 "subtitle": self.remote.get("remote_host"),
@@ -296,13 +320,13 @@ class Rsync(threading.Thread):
                 "$SHELL -l -c \"LANG=C cd "+self.remote.get("remote_path")+" && "+self.remote.get("remote_post_command")+"\""
             ]
             try:
-                console_print(self.remote.get("remote_host"), self.local_path, "Running post command: "+self.remote.get("remote_post_command"))
+                console_print(self.remote.get("remote_host"), prefix, "Running post command: "+self.remote.get("remote_post_command"))
                 output = subprocess.check_output(post_command, universal_newlines=True, stdin=subprocess.DEVNULL, stderr=subprocess.STDOUT)
                 if output:
                     output = re.sub(r'\n$', "", output)
-                    console_print(self.remote.get("remote_host"), self.local_path, output)
+                    console_print(self.remote.get("remote_host"), preifx, output)
             except subprocess.CalledProcessError as e:
-                console_print(self.remote.get("remote_host"), self.local_path, "ERROR: "+e.output+"\n")
+                console_print(self.remote.get("remote_host"), prefix, "ERROR: "+e.output+"\n")
                 sublime.active_window().run_command("terminal_notifier", {
                     "title": "\[Rsync SSH] - ERROR",
                     "subtitle": self.remote.get("remote_host"),
