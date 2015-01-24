@@ -123,7 +123,7 @@ To get notifications upon successful saves, please install [Terminal Notificatio
 
 ## License
 
-&copy; 2013-2015 David Olrik <david@olrik.dk>.
+&copy; 2013-2015 David Olrik <[david@olrik.dk](mailto:david@olrik.dk)>.
 
 This is free software. It is licensed under the [Creative Commons Attribution-ShareAlike 3.0 Unported License](http://creativecommons.org/licenses/by-sa/3.0/). Feel free to use this package in your own work. However, if you modify and/or redistribute it, please attribute me in some way, and distribute your work under this or a similar license.
 
