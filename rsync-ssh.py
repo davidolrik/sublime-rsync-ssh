@@ -248,7 +248,7 @@ class Rsync(threading.Thread):
     def run(self):
         # Skip disabled remotes
         if not self.remote.get("enabled", 1):
-            console_print(self.remote.get("remote_host"), prefix, "Skipping, host is disabled.")
+            console_print(self.remote.get("remote_host"), self.prefix, "Skipping, host is disabled.")
             return
 
         # What to rsync
