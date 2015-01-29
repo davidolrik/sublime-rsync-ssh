@@ -1,0 +1,5 @@
+Rsync SSH 1.4.1
+---------------
+
+- Fixed issue #15: Folder to Remote matching now works properly, even when one
+  is relative, and the other is absolute.

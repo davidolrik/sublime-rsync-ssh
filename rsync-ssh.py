@@ -126,35 +126,74 @@ class RsyncSSH(threading.Thread):
 
         connect_timeout = self.settings.get("timeout", 10)
 
-        # Get container directory
-        project_path = os.path.dirname(sublime.active_window().project_file_name())
-
         # Iterate over all active folders and start a sync thread for each one
         threads = []
         status_bar_message = "Rsyncing " + str(len(sublime.active_window().folders())) + " folder"
         if len(sublime.active_window().folders()) > 1:
             status_bar_message += "s"
         sublime.active_window().active_view().set_status("00000_rsync_ssh_status", status_bar_message)
+
+        # Iterate over all project folders
         for folder_path_full in sublime.active_window().folders():
             folder_path_basename = os.path.basename(folder_path_full)
-
-            prefix = folder_path_full
-            prefix = prefix.replace(project_path+"/", "")
 
             # Don't sync if saving single file outside of project path
             if self.file_being_saved and not self.file_being_saved.startswith(folder_path_full+"/"):
                 continue
 
+            # Default prefix is the folder name
+            prefix = folder_path_basename
+
             # Build dict of matching remotes index by full local path
             remotes = {}
-            for remote_key in self.settings.get("remotes").keys():
-                # Full path
-                if remote_key.startswith(folder_path_full):
-                    remotes[remote_key] = self.settings.get("remotes").get(remote_key)
 
-                # Just basename
-                if remote_key.startswith(folder_path_basename):
-                    remotes[project_path+"/"+remote_key] = self.settings.get("remotes").get(remote_key)
+            # Iterate over remotes which is indexed by the local path
+            for remote_key in self.settings.get("remotes").keys():
+                # Disallow use of . as remote_key when more than one folder is present
+                if remote_key == '.' and len(sublime.active_window().folders()) > 1:
+                    console_print("", prefix, "Use of . is ambiguous when project has more than one folder.")
+                    continue
+
+                if remote_key != ".":
+                    # Get subfolder from remote key
+                    # If remote key is relative also get the split prefix so we can get the container folder later
+                    [split_prefix, subfolder] = str.split(remote_key, folder_path_basename, 2)
+                    if split_prefix.startswith("/"):
+                        # Split prefix is not relative, so we clear it
+                        split_prefix = ""
+                    folder_path_basename = split_prefix+folder_path_basename
+
+                    # Get container folder from real folder, ignore the rest
+                    [container_folder, ignore]   = str.split(folder_path_full, folder_path_basename, 2)
+
+                    # Update prefix with prefix and suffix
+                    prefix = split_prefix+prefix+subfolder
+                    prefix = prefix.replace(container_folder, "")
+
+                # Compute local path
+                local_path = ""
+                # Remote key is current path, will only work with a single folder project
+                if remote_key == ".":
+                    local_path = folder_path_full
+                # Remote key with absolute path and subfolder
+                elif remote_key.startswith(container_folder) and len(subfolder) > 0:
+                    local_path = container_folder+folder_path_basename+subfolder
+                # Remote key with absolute path and no subfolder
+                elif remote_key.startswith(container_folder) and len(subfolder) == 0:
+                    local_path = container_folder+folder_path_basename
+                # Remote key with relative  path and subfolder
+                elif remote_key.startswith(folder_path_basename) and len(subfolder) > 0:
+                    local_path = container_folder+folder_path_basename+subfolder
+                # Remote key with relative  path and no subfolder
+                elif remote_key.startswith(folder_path_basename) and len(subfolder) == 0:
+                    local_path = container_folder+folder_path_basename+subfolder
+                # We tried everything, it should have worked ;-)
+                else:
+                    console_print("","","Unable to determine local path for "+remote_key)
+                    continue
+
+                # Store remote from config indexed by full local path
+                remotes[local_path] = self.settings.get("remotes").get(remote_key)
 
             # Don't sync if no remotes are defined
             if len(remotes.keys()) == 0:
@@ -175,11 +214,11 @@ class RsyncSSH(threading.Thread):
 
                     thread = Rsync(
                         local_path,
+                        prefix,
                         remote,
                         local_excludes,
                         local_options,
                         connect_timeout,
-                        project_path,
                         self.file_being_saved
                     )
                     threads.append(thread)
@@ -190,24 +229,23 @@ class RsyncSSH(threading.Thread):
             sublime.active_window().active_view().set_status("00000_rsync_ssh_status", "")
             sublime.status_message(status_bar_message + " - done.")
             console_print("", "", "done")
+        else:
+            sublime.active_window().active_view().set_status("00000_rsync_ssh_status", "")
+            sublime.status_message(status_bar_message + " - done.")
 
 
 class Rsync(threading.Thread):
-    def __init__(self, local_path, remote, excludes, options, timeout, project_path, single_file):
+    def __init__(self, local_path, prefix, remote, excludes, options, timeout, single_file):
         self.local_path   = local_path
+        self.prefix       = prefix
         self.remote       = remote
         self.excludes     = excludes
         self.options      = options
         self.timeout      = timeout
-        self.project_path = project_path
         self.single_file  = single_file
         threading.Thread.__init__(self)
 
     def run(self):
-        # Pretty path for logging
-        prefix = self.local_path
-        prefix = prefix.replace(self.project_path+"/", "")
-
         # Skip disabled remotes
         if not self.remote.get("enabled", 1):
             console_print(self.remote.get("remote_host"), prefix, "Skipping, host is disabled.")
@@ -239,10 +277,10 @@ class Rsync(threading.Thread):
                     "message": message,
                     "group": self.remote.get("remote_host")+":"+self.remote.get("remote_path")
                 })
-                console_print(self.remote.get("remote_host"), prefix, output)
+                console_print(self.remote.get("remote_host"), self.prefix, output)
                 return
         except subprocess.TimeoutExpired as e:
-            console_print(self.remote.get("remote_host"), prefix, "ERROR: "+e.output)
+            console_print(self.remote.get("remote_host"), self.prefix, "ERROR: "+e.output)
             sublime.active_window().run_command("terminal_notifier", {
                 "title": "\[Rsync SSH] - ERROR Timeout",
                 "subtitle": self.remote.get("remote_host"),
@@ -250,7 +288,7 @@ class Rsync(threading.Thread):
             })
             return
         except subprocess.CalledProcessError as e:
-            console_print(self.remote.get("remote_host"), prefix, "ERROR: "+e.output)
+            console_print(self.remote.get("remote_host"), self.prefix, "ERROR: "+e.output)
             sublime.active_window().run_command("terminal_notifier", {
                 "title": "\[Rsync SSH] - ERROR command failed",
                 "subtitle": self.remote.get("remote_host"),
@@ -266,13 +304,13 @@ class Rsync(threading.Thread):
                 "$SHELL -l -c \"LANG=C cd "+self.remote.get("remote_path")+" && "+self.remote.get("remote_pre_command")+"\""
             ]
             try:
-                console_print(self.remote.get("remote_host"), prefix, "Running pre command: "+self.remote.get("remote_pre_command"))
+                console_print(self.remote.get("remote_host"), self.prefix, "Running pre command: "+self.remote.get("remote_pre_command"))
                 output = subprocess.check_output(pre_command, universal_newlines=True, stderr=subprocess.STDOUT)
                 if output:
                     output = re.sub(r'\n$', "", output)
-                    console_print(self.remote.get("remote_host"), prefix, output)
+                    console_print(self.remote.get("remote_host"), self.prefix, output)
             except subprocess.CalledProcessError as e:
-                console_print(self.remote.get("remote_host"), prefix, "ERROR: "+e.output+"\n")
+                console_print(self.remote.get("remote_host"), self.prefix, "ERROR: "+e.output+"\n")
                 sublime.active_window().run_command("terminal_notifier", {
                     "title": "\[Rsync SSH] - ERROR",
                     "subtitle": self.remote.get("remote_host"),
@@ -298,14 +336,14 @@ class Rsync(threading.Thread):
             rsync_command.append("--exclude="+exclude)
 
         # Show actual rsync command in the console
-        console_print(self.remote.get("remote_host"), prefix, " ".join(rsync_command))
+        console_print(self.remote.get("remote_host"), self.prefix, " ".join(rsync_command))
 
         # Execute rsync
         try:
             output = subprocess.check_output(rsync_command, universal_newlines=True, stderr=subprocess.STDOUT)
-            console_print(self.remote.get("remote_host"), prefix, output)
+            console_print(self.remote.get("remote_host"), self.prefix, output)
         except subprocess.CalledProcessError as e:
-            console_print(self.remote.get("remote_host"), prefix, "ERROR: "+e.output+"\n")
+            console_print(self.remote.get("remote_host"), self.prefix, "ERROR: "+e.output+"\n")
             sublime.active_window().run_command("terminal_notifier", {
                 "title": "\[Rsync SSH] - ERROR",
                 "subtitle": self.remote.get("remote_host"),
@@ -320,13 +358,13 @@ class Rsync(threading.Thread):
                 "$SHELL -l -c \"LANG=C cd "+self.remote.get("remote_path")+" && "+self.remote.get("remote_post_command")+"\""
             ]
             try:
-                console_print(self.remote.get("remote_host"), prefix, "Running post command: "+self.remote.get("remote_post_command"))
+                console_print(self.remote.get("remote_host"), self.prefix, "Running post command: "+self.remote.get("remote_post_command"))
                 output = subprocess.check_output(post_command, universal_newlines=True, stdin=subprocess.DEVNULL, stderr=subprocess.STDOUT)
                 if output:
                     output = re.sub(r'\n$', "", output)
                     console_print(self.remote.get("remote_host"), preifx, output)
             except subprocess.CalledProcessError as e:
-                console_print(self.remote.get("remote_host"), prefix, "ERROR: "+e.output+"\n")
+                console_print(self.remote.get("remote_host"), self.prefix, "ERROR: "+e.output+"\n")
                 sublime.active_window().run_command("terminal_notifier", {
                     "title": "\[Rsync SSH] - ERROR",
                     "subtitle": self.remote.get("remote_host"),
