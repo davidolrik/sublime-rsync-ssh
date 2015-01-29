@@ -155,6 +155,11 @@ class RsyncSSH(threading.Thread):
                     continue
 
                 if remote_key != ".":
+                    # Just continue if remote_key doesn't contain folder_path_basename, it means remote_key
+                    # doesn't correspond to local project dir
+                    if not folder_path_basename in remote_key:
+                        continue
+
                     # Get subfolder from remote key
                     # If remote key is relative also get the split prefix so we can get the container folder later
                     [split_prefix, subfolder] = str.split(remote_key, folder_path_basename, 2)
