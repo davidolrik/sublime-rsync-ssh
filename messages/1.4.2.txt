@@ -1,0 +1,5 @@
+Rsync SSH 1.4.2
+---------------
+
+- [Bugfix] Merged pull request #16: Don't process remotes if folder basename is not in
+  the remote. (Krzysztof Kwiatkowski)
