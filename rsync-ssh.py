@@ -265,24 +265,24 @@ class Rsync(threading.Thread):
             source_path = self.single_file
             destination_path = self.remote.get("remote_path") + self.single_file.replace(self.local_path, "")
 
-        # Check ssh connection, and verify that rsync exists in path on the remote host
+        # Check ssh connection, and get path of rsync on the remote host
         check_command = [
             "ssh", "-q", "-T", "-p", str(self.remote.get("remote_port", "22")),
             self.remote.get("remote_user")+"@"+self.remote.get("remote_host"),
-            "LANG=C type rsync"
+            "LANG=C which rsync"
         ]
         try:
-            output = subprocess.check_output(check_command, universal_newlines=True, timeout=self.timeout, stderr=subprocess.STDOUT)
-            if not re.match("rsync.+?\/rsync", output):
+            self.rsync_path = subprocess.check_output(check_command, universal_newlines=True, timeout=self.timeout, stderr=subprocess.STDOUT).rstrip()
+            if not self.rsync_path.endswith("/rsync"):
                 message = "ERROR: Unable to locate rsync on "+self.remote.get("remote_host")
-                console_print(self.remote.get("remote_host"), prefix, message)
+                console_print(self.remote.get("remote_host"), self.prefix, message)
                 sublime.active_window().run_command("terminal_notifier", {
                     "title": "\[Rsync SSH] - ERROR",
                     "subtitle": self.remote.get("remote_host"),
                     "message": message,
                     "group": self.remote.get("remote_host")+":"+self.remote.get("remote_path")
                 })
-                console_print(self.remote.get("remote_host"), self.prefix, output)
+                console_print(self.remote.get("remote_host"), self.prefix, self.rsync_path)
                 return
         except subprocess.TimeoutExpired as e:
             console_print(self.remote.get("remote_host"), self.prefix, "ERROR: "+e.output)
@@ -342,6 +342,13 @@ class Rsync(threading.Thread):
 
         # Show actual rsync command in the console
         console_print(self.remote.get("remote_host"), self.prefix, " ".join(rsync_command))
+
+        # Add mkdir unless we have a --dry-run flag
+        if  len([option for option in rsync_command if '--dry-run' in option]) == 0:
+            rsync_command.extend([
+                "--rsync-path",
+                "mkdir -p '" + os.path.dirname(destination_path) + "' && " + self.rsync_path
+            ])
 
         # Execute rsync
         try:
