@@ -162,14 +162,14 @@ class RsyncSSH(threading.Thread):
 
                     # Get subfolder from remote key
                     # If remote key is relative also get the split prefix so we can get the container folder later
-                    [split_prefix, subfolder] = str.split(remote_key, folder_path_basename, 2)
+                    [split_prefix, subfolder] = str.rsplit(remote_key, folder_path_basename, 1)
                     if split_prefix.startswith("/"):
                         # Split prefix is not relative, so we clear it
                         split_prefix = ""
                     folder_path_basename = split_prefix+folder_path_basename
 
                     # Get container folder from real folder, ignore the rest
-                    [container_folder, ignore]   = str.split(folder_path_full, folder_path_basename, 2)
+                    [container_folder, ignore]   = str.rsplit(folder_path_full, folder_path_basename, 1)
 
                     # Update prefix with prefix and suffix
                     prefix = split_prefix+prefix+subfolder
