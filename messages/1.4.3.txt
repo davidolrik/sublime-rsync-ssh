@@ -1,0 +1,8 @@
+Rsync SSH 1.4.3
+---------------
+
+- Remote path no longer has to exist in advance for sync to be successful.
+  Full remote path will created during sync.
+- We now use which instead of type to find rsync on the remote host.
+- Fixed issue #17, it is now allowed to have the basename more thant once in
+  a folder path.
