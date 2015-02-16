@@ -1,0 +1,4 @@
+Rsync SSH 1.4.4
+---------------
+
+- Merged #19, a typo prevented remote post commands. (Eli Finer)
