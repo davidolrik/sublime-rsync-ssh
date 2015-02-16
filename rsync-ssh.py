@@ -374,7 +374,7 @@ class Rsync(threading.Thread):
                 output = subprocess.check_output(post_command, universal_newlines=True, stdin=subprocess.DEVNULL, stderr=subprocess.STDOUT)
                 if output:
                     output = re.sub(r'\n$', "", output)
-                    console_print(self.remote.get("remote_host"), preifx, output)
+                    console_print(self.remote.get("remote_host"), self.prefix, output)
             except subprocess.CalledProcessError as e:
                 console_print(self.remote.get("remote_host"), self.prefix, "ERROR: "+e.output+"\n")
                 sublime.active_window().run_command("terminal_notifier", {
