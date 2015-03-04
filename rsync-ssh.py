@@ -272,7 +272,7 @@ class Rsync(threading.Thread):
             "LANG=C which rsync"
         ]
         try:
-            self.rsync_path = subprocess.check_output(check_command, universal_newlines=True, timeout=self.timeout, stderr=subprocess.STDOUT).rstrip()
+            self.rsync_path = subprocess.check_output(check_command, universal_newlines=True, timeout=self.timeout, stderr=subprocess.STDOUT).split('\n')[0].rstrip()
             if not self.rsync_path.endswith("/rsync"):
                 message = "ERROR: Unable to locate rsync on "+self.remote.get("remote_host")
                 console_print(self.remote.get("remote_host"), self.prefix, message)
