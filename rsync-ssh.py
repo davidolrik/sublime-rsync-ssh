@@ -355,7 +355,11 @@ class Rsync(threading.Thread):
             output = subprocess.check_output(rsync_command, universal_newlines=True, stderr=subprocess.STDOUT)
             console_print(self.remote.get("remote_host"), self.prefix, output)
         except subprocess.CalledProcessError as e:
-            console_print(self.remote.get("remote_host"), self.prefix, "ERROR: "+e.output+"\n")
+            if  len([option for option in rsync_command if '--dry-run' in option]) != 0 and re.search("No such file or directory", e.output, re.MULTILINE):
+                console_print(self.remote.get("remote_host"), self.prefix, "WARNING: Unable to do dry run, remote directory "+os.path.dirname(destination_path)+" does not exist.")
+            else:
+                console_print(self.remote.get("remote_host"), self.prefix, "ERROR: "+e.output+"\n")
+
             sublime.active_window().run_command("terminal_notifier", {
                 "title": "\[Rsync SSH] - ERROR",
                 "subtitle": self.remote.get("remote_host"),
