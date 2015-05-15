@@ -121,6 +121,12 @@ You install this plugin either by cloning this project directly, or by installin
 
 To get notifications upon successful saves, please install [Terminal Notifications](https://github.com/davidolrik/sublime-terminal-notifier).
 
+## F.A.Q.
+
+### When I try to sync, nothing happens
+
+You probably forgot to remove `--dry-run` from the rsync options in the project configuration file.
+
 ## License
 
 &copy; 2013-2015 David Olrik <[david@olrik.dk](mailto:david@olrik.dk)>.
