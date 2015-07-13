@@ -296,7 +296,12 @@ class Rsync(threading.Thread):
             })
             return
         except subprocess.CalledProcessError as e:
-            console_print(self.remote.get("remote_host"), self.prefix, "ERROR: "+e.output)
+            if e.returncode == 255 and e.output == '':
+                console_print(self.remote.get("remote_host"), self.prefix, "ERROR: ssh check command failed, have you accepted the remote host key?")
+                console_print(self.remote.get("remote_host"), self.prefix, "       Try running the ssh command manually on in a terminal:")
+                console_print(self.remote.get("remote_host"), self.prefix, "       "+" ".join(e.cmd))
+            else:
+                console_print(self.remote.get("remote_host"), self.prefix, "ERROR: "+e.output)
             sublime.active_window().run_command("terminal_notifier", {
                 "title": "\[Rsync SSH] - ERROR command failed",
                 "subtitle": self.remote.get("remote_host"),
