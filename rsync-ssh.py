@@ -81,13 +81,31 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
 
 class RsyncSshSaveCommand(sublime_plugin.EventListener):
     def on_post_save(self,view):
-        # Get name of file being saved
+        # Get settings
+        settings = sublime.active_window().active_view().settings().get("rsync_ssh")
+
+        # Don't do anything if rsync-ssh hasn't been configured
+        if not settings:
+            return
+        # Don't sync single file if user has disabled sync on save
+        elif settings.get("sync_on_save", True) == False:
+            return
+
+        # Return if we are already syncing the file
+        if sublime.active_window().active_view().get_status("00000_rsync_ssh_status"):
+            print("Sync already in progress")
+            return
+
+        # Block other instances of the same file from initiating sync
+        sublime.active_window().active_view().set_status("00000_rsync_ssh_status", "Sync initiated")
+
+        # Execute sync with the name of file being saved
         view.run_command("rsync_ssh_sync", {"file_being_saved": view.file_name()})
 
 
 class RsyncSshSyncCommand(sublime_plugin.TextCommand):
     def run(self, edit, **args):
-        # Convert list of project folders to dict indexed by path
+        # Get settings
         settings = sublime.active_window().active_view().settings().get("rsync_ssh")
 
         # Don't try to sync if User pressed ⌘⇧12 and rsync-ssh is unconfigured
@@ -96,9 +114,6 @@ class RsyncSshSyncCommand(sublime_plugin.TextCommand):
             return
         # Don't try to sync when we have no settings
         elif not settings:
-            return
-        # Don't sync single file if user has disabled sync on save
-        elif args.get("file_being_saved") and settings.get("sync_on_save", True) == False:
             return
 
         # Start command thread to keep ui responsive
