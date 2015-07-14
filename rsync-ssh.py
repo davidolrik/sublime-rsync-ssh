@@ -111,9 +111,11 @@ class RsyncSshSyncCommand(sublime_plugin.TextCommand):
         # Don't try to sync if User pressed ⌘⇧12 and rsync-ssh is unconfigured
         if not settings and not args.get("file_being_saved"):
             console_print("", "", "Aborting! - rsync ssh is not configured!")
+            sublime.active_window().active_view().set_status("00000_rsync_ssh_status", "")
             return
         # Don't try to sync when we have no settings
         elif not settings:
+            sublime.active_window().active_view().set_status("00000_rsync_ssh_status", "")
             return
 
         # Start command thread to keep ui responsive
@@ -130,6 +132,7 @@ class RsyncSSH(threading.Thread):
     def run(self):
         # Don't sync git commit message buffer
         if self.file_being_saved and os.path.basename(self.file_being_saved) == "COMMIT_EDITMSG":
+            sublime.active_window().active_view().set_status("00000_rsync_ssh_status", "")
             return
 
         # Merge settings with defaults
