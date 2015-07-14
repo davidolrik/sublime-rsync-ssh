@@ -373,6 +373,11 @@ class Rsync(threading.Thread):
         # Execute rsync
         try:
             output = subprocess.check_output(rsync_command, universal_newlines=True, stderr=subprocess.STDOUT)
+            # Fix rsync output to include relative remote path
+            if self.single_file:
+                destination_file_relative = re.sub(self.remote.get("remote_path")+'/?', '', destination_path)
+                destination_file_basename = os.path.basename(destination_file_relative)
+                output = re.sub(destination_file_basename, destination_file_relative, output)
             console_print(self.remote.get("remote_host"), self.prefix, output)
             if  len([option for option in rsync_command if '--dry-run' in option]) != 0:
                 console_print(self.remote.get("remote_host"), self.prefix, "NOTICE: Nothing synced. Remove --dry-run from options to sync.")
