@@ -1,0 +1,11 @@
+Rsync SSH 1.5.0
+---------------
+
+- Added support for configuring which ssh binary to use.
+  Set 'ssh_binary' in the project configfile. (aviddiviner)
+- Added console warnings when running with --dry-run
+  E.g. "Remote directory missing" and "Not syncing because of dry run".
+- Improved console error message when ssh is unable to connect.
+- We will now show the console panel when encountering errors.
+- Removed support for terminal_notifier.
+- Updated README with new settings and feature list.
