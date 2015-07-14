@@ -30,6 +30,7 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
 
         if project_data == None:
             console_print("", "", "Unable to initialize settings, you must have a .sublime-project file.")
+            console_print("", "", "Please use 'Project -> Save Project As...' first.")
             console_show()
             return
 
@@ -51,6 +52,7 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
 
             if project_data.get("folders") == None:
                 console_print("", "", "Unable to initialize settings, you must have at least one folder in your .sublime-project file.")
+                console_print("", "", "Please use 'Add Folder to Project...' first.")
                 console_show()
                 return
 
@@ -398,4 +400,5 @@ class Rsync(threading.Thread):
                 console_show()
                 console_print(self.remote.get("remote_host"), self.prefix, "ERROR: "+e.output+"\n")
 
+        # End of run
         return
