@@ -44,6 +44,12 @@ Be aware that the `--delete` option will destroy the directoy you speficy in `re
         # This is the block the plugin adds to your project file
         "rsync_ssh":
         {
+            # To use non-standard ssh
+            "ssh_binary": "/usr/local/bin/ssh"
+
+            # To disable sync on save set 'sync_on_save' to false
+            "sync_on_save": true
+
             # Rsync options
             "options":
             [
