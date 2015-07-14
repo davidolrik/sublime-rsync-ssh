@@ -98,7 +98,8 @@ class RsyncSshSaveCommand(sublime_plugin.EventListener):
 
         # Return if we are already syncing the file
         if sublime.active_window().active_view().get_status("00000_rsync_ssh_status"):
-            print("Sync already in progress")
+            if settings.get("debug", False) == True:
+                print("Sync already in progress")
             return
 
         # Block other instances of the same file from initiating sync
