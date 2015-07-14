@@ -119,8 +119,6 @@ Press ⇧⌘F12 to sync all folders to all enabled remotes. - Note you must do t
 
 You install this plugin either by cloning this project directly, or by installing it via the excellent [Package Control](http://packagecontrol.io) plugin.
 
-To get notifications upon successful saves, please install [Terminal Notifications](https://github.com/davidolrik/sublime-terminal-notifier).
-
 ## F.A.Q.
 
 ### When I try to sync, nothing happens

@@ -296,21 +296,10 @@ class Rsync(threading.Thread):
             if not self.rsync_path.endswith("/rsync"):
                 message = "ERROR: Unable to locate rsync on "+self.remote.get("remote_host")
                 console_print(self.remote.get("remote_host"), self.prefix, message)
-                sublime.active_window().run_command("terminal_notifier", {
-                    "title": "\[Rsync SSH] - ERROR",
-                    "subtitle": self.remote.get("remote_host"),
-                    "message": message,
-                    "group": self.remote.get("remote_host")+":"+self.remote.get("remote_path")
-                })
                 console_print(self.remote.get("remote_host"), self.prefix, self.rsync_path)
                 return
         except subprocess.TimeoutExpired as e:
             console_print(self.remote.get("remote_host"), self.prefix, "ERROR: "+e.output)
-            sublime.active_window().run_command("terminal_notifier", {
-                "title": "\[Rsync SSH] - ERROR Timeout",
-                "subtitle": self.remote.get("remote_host"),
-                "message": e.output
-            })
             return
         except subprocess.CalledProcessError as e:
             if e.returncode == 255 and e.output == '':
@@ -319,11 +308,7 @@ class Rsync(threading.Thread):
                 console_print(self.remote.get("remote_host"), self.prefix, "       "+" ".join(e.cmd))
             else:
                 console_print(self.remote.get("remote_host"), self.prefix, "ERROR: "+e.output)
-            sublime.active_window().run_command("terminal_notifier", {
-                "title": "\[Rsync SSH] - ERROR command failed",
-                "subtitle": self.remote.get("remote_host"),
-                "message": e.output
-            })
+
             return
 
         # Remote pre command
@@ -341,11 +326,6 @@ class Rsync(threading.Thread):
                     console_print(self.remote.get("remote_host"), self.prefix, output)
             except subprocess.CalledProcessError as e:
                 console_print(self.remote.get("remote_host"), self.prefix, "ERROR: "+e.output+"\n")
-                sublime.active_window().run_command("terminal_notifier", {
-                    "title": "\[Rsync SSH] - ERROR",
-                    "subtitle": self.remote.get("remote_host"),
-                    "message": "pre command failed."
-                })
 
         # Build rsync command
         rsync_command = [
@@ -387,12 +367,6 @@ class Rsync(threading.Thread):
             else:
                 console_print(self.remote.get("remote_host"), self.prefix, "ERROR: "+e.output+"\n")
 
-            sublime.active_window().run_command("terminal_notifier", {
-                "title": "\[Rsync SSH] - ERROR",
-                "subtitle": self.remote.get("remote_host"),
-                "message": "rsync failed."
-            })
-
         # Remote post command
         if self.remote.get("remote_post_command"):
             post_command = [
@@ -408,17 +382,5 @@ class Rsync(threading.Thread):
                     console_print(self.remote.get("remote_host"), self.prefix, output)
             except subprocess.CalledProcessError as e:
                 console_print(self.remote.get("remote_host"), self.prefix, "ERROR: "+e.output+"\n")
-                sublime.active_window().run_command("terminal_notifier", {
-                    "title": "\[Rsync SSH] - ERROR",
-                    "subtitle": self.remote.get("remote_host"),
-                    "message": "post command failed."
-                })
-
-        sublime.active_window().run_command("terminal_notifier", {
-            "title": "\[Rsync SSH] - OK",
-            "subtitle": self.remote.get("remote_host")+"["+os.path.basename(self.local_path)+"]",
-            "message": "rsync of '" + os.path.basename(self.local_path) + "' complete.",
-            "group": self.remote.get("remote_host")+"_"+self.remote.get("remote_path")
-        })
 
         return
