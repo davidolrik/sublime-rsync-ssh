@@ -12,6 +12,9 @@ def console_print(host, prefix, output):
     output = "[rsync-ssh] " + host + output.replace("\n", "\n[rsync-ssh] "+ host)
     print(output)
 
+def console_show():
+    sublime.active_window().run_command("show_panel", {"panel": "console", "toggle": False})
+
 def current_user():
     if 'USER' in os.environ:
         return os.environ['USER']
@@ -27,6 +30,7 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
 
         if project_data == None:
             console_print("", "", "Unable to initialize settings, you must have a .sublime-project file.")
+            console_show()
             return
 
         # If no rsync-ssh config exists, then create it
@@ -47,6 +51,7 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
 
             if project_data.get("folders") == None:
                 console_print("", "", "Unable to initialize settings, you must have at least one folder in your .sublime-project file.")
+                console_show()
                 return
 
             for folder in project_data.get("folders"):
@@ -297,14 +302,17 @@ class Rsync(threading.Thread):
         try:
             self.rsync_path = subprocess.check_output(check_command, universal_newlines=True, timeout=self.timeout, stderr=subprocess.STDOUT).rstrip()
             if not self.rsync_path.endswith("/rsync"):
+                console_show()
                 message = "ERROR: Unable to locate rsync on "+self.remote.get("remote_host")
                 console_print(self.remote.get("remote_host"), self.prefix, message)
                 console_print(self.remote.get("remote_host"), self.prefix, self.rsync_path)
                 return
         except subprocess.TimeoutExpired as e:
+            console_show()
             console_print(self.remote.get("remote_host"), self.prefix, "ERROR: "+e.output)
             return
         except subprocess.CalledProcessError as e:
+            console_show()
             if e.returncode == 255 and e.output == '':
                 console_print(self.remote.get("remote_host"), self.prefix, "ERROR: ssh check command failed, have you accepted the remote host key?")
                 console_print(self.remote.get("remote_host"), self.prefix, "       Try running the ssh command manually on in a terminal:")
@@ -328,6 +336,7 @@ class Rsync(threading.Thread):
                     output = re.sub(r'\n$', "", output)
                     console_print(self.remote.get("remote_host"), self.prefix, output)
             except subprocess.CalledProcessError as e:
+                console_show()
                 console_print(self.remote.get("remote_host"), self.prefix, "ERROR: "+e.output+"\n")
 
         # Build rsync command
@@ -365,6 +374,7 @@ class Rsync(threading.Thread):
             if  len([option for option in rsync_command if '--dry-run' in option]) != 0:
                 console_print(self.remote.get("remote_host"), self.prefix, "NOTICE: Nothing synced. Remove --dry-run from options to sync.")
         except subprocess.CalledProcessError as e:
+            console_show()
             if  len([option for option in rsync_command if '--dry-run' in option]) != 0 and re.search("No such file or directory", e.output, re.MULTILINE):
                 console_print(self.remote.get("remote_host"), self.prefix, "WARNING: Unable to do dry run, remote directory "+os.path.dirname(destination_path)+" does not exist.")
             else:
@@ -384,6 +394,7 @@ class Rsync(threading.Thread):
                     output = re.sub(r'\n$', "", output)
                     console_print(self.remote.get("remote_host"), self.prefix, output)
             except subprocess.CalledProcessError as e:
+                console_show()
                 console_print(self.remote.get("remote_host"), self.prefix, "ERROR: "+e.output+"\n")
 
         return
