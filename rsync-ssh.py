@@ -140,7 +140,9 @@ class RsyncSSH(threading.Thread):
         global_options.extend( self.settings.get("options", []) )
 
         connect_timeout = self.settings.get("timeout", 10)
-        ssh_command = self.settings.get("ssh_command", "ssh")
+
+        # Get path to local ssh binary
+        ssh_binary = self.settings.get("ssh_binary", self.settings.get("ssh_command", "ssh"))
 
         # Iterate over all active folders and start a sync thread for each one
         threads = []
@@ -234,7 +236,7 @@ class RsyncSSH(threading.Thread):
                     local_options.extend(remote.get("options", []))
 
                     thread = Rsync(
-                        ssh_command,
+                        ssh_binary,
                         local_path,
                         prefix,
                         remote,
@@ -257,8 +259,8 @@ class RsyncSSH(threading.Thread):
 
 
 class Rsync(threading.Thread):
-    def __init__(self, ssh_command, local_path, prefix, remote, excludes, options, timeout, single_file):
-        self.ssh_command  = ssh_command
+    def __init__(self, ssh_binary, local_path, prefix, remote, excludes, options, timeout, single_file):
+        self.ssh_binary  = ssh_binary
         self.local_path   = local_path
         self.prefix       = prefix
         self.remote       = remote
@@ -285,7 +287,7 @@ class Rsync(threading.Thread):
 
         # Check ssh connection, and get path of rsync on the remote host
         check_command = [
-            self.ssh_command, "-q", "-T", "-p", str(self.remote.get("remote_port", "22")),
+            self.ssh_binary, "-q", "-T", "-p", str(self.remote.get("remote_port", "22")),
             self.remote.get("remote_user")+"@"+self.remote.get("remote_host"),
             "LANG=C which rsync"
         ]
@@ -327,7 +329,7 @@ class Rsync(threading.Thread):
         # Remote pre command
         if self.remote.get("remote_pre_command"):
             pre_command = [
-                self.ssh_command, "-q", "-T", "-p", str(self.remote.get("remote_port", "22")),
+                self.ssh_binary, "-q", "-T", "-p", str(self.remote.get("remote_port", "22")),
                 self.remote.get("remote_user")+"@"+self.remote.get("remote_host"),
                 "$SHELL -l -c \"LANG=C cd "+self.remote.get("remote_path")+" && "+self.remote.get("remote_pre_command")+"\""
             ]
@@ -348,7 +350,7 @@ class Rsync(threading.Thread):
         # Build rsync command
         rsync_command = [
             "rsync", "-v", "-zar",
-            "-e", self.ssh_command + " -q -T -p " + str(self.remote.get("remote_port", "22")) + " -o ConnectTimeout="+str(self.timeout)
+            "-e", self.ssh_binary + " -q -T -p " + str(self.remote.get("remote_port", "22")) + " -o ConnectTimeout="+str(self.timeout)
         ]
         # We allow options to be specified as "--foo bar" in the config so we need to split all options on first space after the option name
         for option in self.options:
@@ -394,7 +396,7 @@ class Rsync(threading.Thread):
         # Remote post command
         if self.remote.get("remote_post_command"):
             post_command = [
-                self.ssh_command, "-q", "-T", "-p", str(self.remote.get("remote_port", "22")),
+                self.ssh_binary, "-q", "-T", "-p", str(self.remote.get("remote_port", "22")),
                 self.remote.get("remote_user")+"@"+self.remote.get("remote_host"),
                 "$SHELL -l -c \"LANG=C cd "+self.remote.get("remote_path")+" && "+self.remote.get("remote_post_command")+"\""
             ]
