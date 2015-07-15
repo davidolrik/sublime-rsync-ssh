@@ -6,6 +6,7 @@
             "caption": "Rsync SSH",
             "children":
             [
+                { "command": "rsync_ssh_sync_specific_remote", "caption": "Sync to specific remote" },
                 { "command": "rsync_ssh_sync", "caption": "Sync Project to remotes" },
                 { "caption": "-" },
                 { "command": "rsync_ssh_init_settings", "caption": "Initialize settings" }

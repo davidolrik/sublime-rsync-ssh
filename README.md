@@ -6,10 +6,18 @@ Keep remote directories in sync with local project folders.
 
 This plugin will let you sync your project folders to one or more remote servers using rsync and ssh.
 
+## Terminology
+
+- A `remote` is a local project folder configured for sync.
+- A `destination` is a path on specific server as a specific user.
+- A `remote` can have one or more `destinations`
+
 ## Features
 
 - Edit locally, work remotely
 - Upload one or more project folders to one or more remote servers.
+- Each project folder can have multiple remotes, and each remote can have multiple destinations
+- Sync whole project or just a single remote or destination
 - Single file save only syncs the file being saved.
 - Auto generate initial rsync-ssh configuration for all folders in a project.
 - Exclude files, either for the whole project, a single fold or just a single remote.
@@ -82,9 +90,9 @@ Be aware that the `--delete` option will destroy the directoy you speficy in `re
                 "my-project-folder":
                 [
                     {
-                        # You can disable any remote by setting this value to 0
+                        # You can disable any destination by setting this value to 0
                         "enabled": 1,
-                        # Stuff we don't want rsync to copy, but just for this remote
+                        # Stuff we don't want rsync to copy, but just for this destination
                         "excludes":
                         [
                         ],
@@ -102,9 +110,9 @@ Be aware that the `--delete` option will destroy the directoy you speficy in `re
                 "my-project-folder/subfolder":
                 [
                     {
-                        # You can disable any remote by setting this value to 0
+                        # You can disable any destination by setting this value to 0
                         "enabled": 1,
-                        # Stuff we don't want rsync to copy, but just for this remote
+                        # Stuff we don't want rsync to copy, but just for this destination
                         "excludes":
                         [
                         ],
@@ -127,6 +135,12 @@ Be aware that the `--delete` option will destroy the directoy you speficy in `re
 ### Sync single file
 
 Just save the file normally, as this will trigger a save event which makes this plugin sync the file to all enabled remotes.
+
+### Sync specific remote or destination
+
+Press ⇧⌘F11 to select a specific remote or destination to sync. When selecting a specific destination the `enabled` flag is overridden and the folder will always be synced.
+If you select a remote, and then select the `All` destination, then the `enabled` flag will be respected.
+If you select a remote with just one destination sync will started immediately and the `enabled` flag will be overridden.
 
 ### Sync full project
 
