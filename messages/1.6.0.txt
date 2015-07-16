@@ -1,0 +1,9 @@
+Rsync SSH 1.6.0
+---------------
+
+- Added support for specific remote/destination sync.
+  Press ⌘⇧11 to and select which remote/destination you want to sync.
+  Remotes with just one destination will sync when selected.
+  Remotes with multiple destinations will allow you to select one or all
+  destinations to sync.
+  Note the "enabled" flag is ignored when syncing to a single destination.
