@@ -9,3 +9,4 @@ Rsync SSH 1.5.0
 - We will now show the console panel when encountering errors.
 - Removed support for terminal_notifier.
 - Updated README with new settings and feature list.
+- Fixed issue #25: Prevent multiple syncs of same file.
