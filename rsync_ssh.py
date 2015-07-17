@@ -1,5 +1,5 @@
 """sublime-rsync-ssh: A Sublime Text 3 plugin for syncing local folders to remote servers."""
-import sublime, sublime_plugin # pylint: disable=F0401
+import sublime, sublime_plugin
 import subprocess, os, re, threading
 
 def console_print(host, prefix, output):
@@ -336,8 +336,14 @@ class RsyncSSH(threading.Thread):
                     if self.path_being_saved and os.path.isdir(self.path_being_saved) and self.path_being_saved != local_path:
                         continue
 
+                    # Build destination string (format=user@host:port:path)
+                    destination_string = ":".join([
+                        destination.get("remote_user")+"@"+destination.get("remote_host"),
+                        str(destination.get("remote_port",22)),
+                        destination.get("remote_path")
+                    ])
+
                     # If this remote has restrictions, we'll respect them
-                    destination_string = destination.get("remote_user")+"@"+destination.get("remote_host")+":"+str(destination.get("remote_port",22))+":"+destination.get("remote_path")
                     if self.restrict_to_destinations and destination_string not in self.restrict_to_destinations:
                         continue
 
@@ -513,7 +519,10 @@ class Rsync(threading.Thread):
         except subprocess.CalledProcessError as error:
             console_show(self.view.window())
             if  len([option for option in rsync_command if '--dry-run' in option]) != 0 and re.search("No such file or directory", error.output, re.MULTILINE):
-                console_print(self.destination.get("remote_host"), self.prefix, "WARNING: Unable to do dry run, remote directory "+os.path.dirname(destination_path)+" does not exist.")
+                console_print(
+                    self.destination.get("remote_host"), self.prefix,
+                    "WARNING: Unable to do dry run, remote directory "+os.path.dirname(destination_path)+" does not exist."
+                )
             else:
                 console_print(self.destination.get("remote_host"), self.prefix, "ERROR: "+error.output+"\n")
 

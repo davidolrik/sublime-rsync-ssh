@@ -1,0 +1,26 @@
+[FORMAT]
+indent-string               = '    '
+max-line-length             = 160
+max-module-lines            = 1000
+expected-line-ending-format = LF
+
+[DESIGN]
+max-args           = 14
+max-attributes     = 14
+max-branches       = 25
+max-locals         = 30
+max-statements     = 100
+min-public-methods = 1
+
+[MESSAGES CONTROL]
+# Disable the following PyLint messages:
+# C0326 Exactly one space required before assignment (Allow spaces to be used to align stuff nicely)
+# R0201 Method could be a function
+# I0011 Local ignores
+disable=C0326,R0201,I0011
+
+[MISCELLANEOUS]
+# List of note tags to take in consideration, separated by a comma.
+# FIXME -- something which needs fixing
+# TODO  -- future plan
+notes=FIXME,TODO
