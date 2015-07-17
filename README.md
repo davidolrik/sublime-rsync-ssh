@@ -156,6 +156,10 @@ You install this plugin either by cloning this project directly, or by installin
 
 You probably forgot to remove `--dry-run` from the rsync options in the project configuration file.
 
+## TODO
+
+- Rename `remotes` to `folders` (Calling them remotes is kinda silly).
+
 ## License
 
 &copy; 2013-2015 David Olrik <[david@olrik.dk](mailto:david@olrik.dk)>.
