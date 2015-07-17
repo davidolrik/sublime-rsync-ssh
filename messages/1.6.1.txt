@@ -1,0 +1,6 @@
+Rsync SSH 1.6.1
+---------------
+
+- Fixed a nasty bug that blocked rsync from starting, if you initiated a sync
+  and it finished while the initiating window was not the active window.
+  (The bug was introduced in 1.5.0, when fixing #25)
