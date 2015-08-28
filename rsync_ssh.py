@@ -29,6 +29,12 @@ def current_user():
 
 def rsync_ssh_settings(view=sublime.active_window().active_view()):
     """Get settings from the sublime project file"""
+    project_data = view.window().project_data()
+
+    # Not all windows have project data
+    if project_data == None:
+        return None
+
     settings = view.window().project_data().get('settings', {}).get("rsync_ssh")
     return settings
 
