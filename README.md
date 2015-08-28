@@ -138,17 +138,17 @@ Just save the file normally, as this will trigger a save event which makes this 
 
 ### Sync specific remote or destination
 
-Press ⇧⌘F11 to select a specific remote or destination to sync. When selecting a specific destination the `enabled` flag is overridden and the folder will always be synced.
+Press ⌘⇧F11 to select a specific remote or destination to sync. When selecting a specific destination the `enabled` flag is overridden and the folder will always be synced.
 If you select a remote, and then select the `All` destination, then the `enabled` flag will be respected.
 If you select a remote with just one destination sync will started immediately and the `enabled` flag will be overridden.
 
 ### Sync full project
 
-Press ⇧⌘F12 to sync all folders to all enabled remotes. - Note you must do this at least once in order to create the project folder on the remote servers.
+Press ⌘⇧F12 to sync all folders to all enabled remotes. - Note you must do this at least once in order to create the project folder on the remote servers.
 
 ## Installation
 
-You install this plugin either by cloning this project directly, or by installing it via the excellent [Package Control](http://packagecontrol.io) plugin.
+You install this plugin either by cloning this project directly, or by installing it via the excellent [Package Control](http://packagecontrol.io) plugin. Press ⌘⇧P and type `Package Control: Install Package` and select it, then type the package name [rsync-ssh](https://packagecontrol.io/packages/Rsync%20SSH) and select it.
 
 ## F.A.Q.
 
