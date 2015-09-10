@@ -1,0 +1,4 @@
+[
+    { "keys": ["ctrl+shift+f11"], "command": "rsync_ssh_sync_specific_remote" },
+    { "keys": ["ctrl+shift+f12"], "command": "rsync_ssh_sync" }
+]

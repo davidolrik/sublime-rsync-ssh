@@ -18,6 +18,10 @@ def console_show(window=sublime.active_window()):
     """Show console panel"""
     window.run_command("show_panel", {"panel": "console", "toggle": False})
 
+def normalize_path(path):
+    """Normalizes path to Unix format, converting back- to forward-slashes."""
+    return path.strip().replace("\\", "/")
+
 def current_user():
     """Get current username from the environment"""
     if 'USER' in os.environ:
@@ -248,7 +252,7 @@ class RsyncSSH(threading.Thread):
         """Set the stage"""
         self.view                     = view
         self.settings                 = settings
-        self.path_being_saved         = path_being_saved
+        self.path_being_saved         = normalize_path(path_being_saved)
         self.restrict_to_destinations = restrict_to_destinations
         self.force_sync               = force_sync
         threading.Thread.__init__(self)
@@ -331,6 +335,8 @@ class RsyncSSH(threading.Thread):
                     # Remote key is current path, will only work with a single folder project
                     local_path = os.path.dirname(self.view.window().project_file_name())
 
+                # Might have mixed slash characters on Windows.
+                local_path = normalize_path(local_path)
 
                 # For each remote destination iterate over each destination and start a rsync thread
                 for destination in self.settings.get("remotes").get(remote_key):
@@ -420,6 +426,16 @@ class Rsync(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
+        # Cygwin version of rsync is assumed on Windows. Local path needs to be converted using cygpath.
+        if sublime.platform() == "windows":
+            try:
+                self.local_path = subprocess.check_output(["cygpath", self.local_path]).decode('ascii').strip()
+                if self.specific_path:
+                    self.specific_path = subprocess.check_output(["cygpath", self.specific_path]).decode('ascii').strip()
+            except:
+                print("[RSync] Failed to run cygpath to convert local file path. Can't continue.")
+                return
+
         # Skip disabled destinations, unless we explicitly force a sync (e.g. for specific destinations)
         if not self.force_sync and not self.destination.get("enabled", 1):
             console_print(self.destination.get("remote_host"), self.prefix, "Skipping, destination is disabled.")
