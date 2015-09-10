@@ -65,22 +65,22 @@ When you initialize your project via `Initialize Settings` the plugin will add t
     ],
     "settings":
     {
-        # This is the block the plugin adds to your project file
+        // This is the block the plugin adds to your project file
         "rsync_ssh":
         {
-            # To use non-standard ssh
+            // To use non-standard ssh
             "ssh_binary": "/usr/local/bin/ssh",
 
-            # To disable sync on save set 'sync_on_save' to false
+            // To disable sync on save set 'sync_on_save' to false
             "sync_on_save": true,
 
-            # Rsync options
+            // Rsync options
             "options":
             [
                 "--dry-run",
                 "--delete"
             ],
-            # Stuff we don't want rsync to copy
+            // Stuff we don't want rsync to copy
             "excludes":
             [
                 ".git*",
@@ -88,45 +88,45 @@ When you initialize your project via `Initialize Settings` the plugin will add t
                 "blib",
                 "Build"
             ],
-            # Servers we want to sync to
+            // Servers we want to sync to
             "remotes":
             {
-                # Each folder from the project will be added here
+                // Each folder from the project will be added here
                 "my-project-folder":
                 [
                     {
-                        # You can disable any destination by setting this value to 0
+                        // You can disable any destination by setting this value to 0
                         "enabled": 1,
-                        # Stuff we don't want rsync to copy, but just for this destination
+                        // Stuff we don't want rsync to copy, but just for this destination
                         "excludes":
                         [
                         ],
-                        # ssh options
+                        // ssh options
                         "remote_host": "my-server.my-domain.tld",
                         "remote_path": "/home/you/Projects/my-project",
                         "remote_port": 22,
                         "remote_user": "you",
-                        # Run commands before and after rsync
+                        // Run commands before and after rsync
                         "remote_pre_command": "",
                         "remote_post_command": ""
                     }
                 ],
-                # Syncing a single subfolder is also supported
+                // Syncing a single subfolder is also supported
                 "my-project-folder/subfolder":
                 [
                     {
-                        # You can disable any destination by setting this value to 0
+                        // You can disable any destination by setting this value to 0
                         "enabled": 1,
-                        # Stuff we don't want rsync to copy, but just for this destination
+                        // Stuff we don't want rsync to copy, but just for this destination
                         "excludes":
                         [
                         ],
-                        # ssh options
+                        // ssh options
                         "remote_host": "my-server.my-domain.tld",
                         "remote_path": "/home/you/Projects/my-subfolder-target",
                         "remote_port": 22,
                         "remote_user": "you",
-                        # Run commands before and after rsync
+                        // Run commands before and after rsync
                         "remote_pre_command": "",
                         "remote_post_command": ""
                     }
