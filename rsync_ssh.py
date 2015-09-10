@@ -31,6 +31,17 @@ def current_user():
     else:
         return 'username'
 
+def check_output(*args, **kwargs):
+    """Runs specified system command using subprocess.check_output()"""
+    startupinfo = None
+    if sublime.platform() == "windows":
+        # Don't let console window pop-up on Windows.
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo.wShowWindow = subprocess.SW_HIDE
+
+    return subprocess.check_output(*args, universal_newlines=True, startupinfo=startupinfo, **kwargs)
+
 def rsync_ssh_settings(view=sublime.active_window().active_view()):
     """Get settings from the sublime project file"""
     project_data = view.window().project_data()
@@ -429,9 +440,9 @@ class Rsync(threading.Thread):
         # Cygwin version of rsync is assumed on Windows. Local path needs to be converted using cygpath.
         if sublime.platform() == "windows":
             try:
-                self.local_path = subprocess.check_output(["cygpath", self.local_path]).decode('ascii').strip()
+                self.local_path = check_output(["cygpath", self.local_path]).strip()
                 if self.specific_path:
-                    self.specific_path = subprocess.check_output(["cygpath", self.specific_path]).decode('ascii').strip()
+                    self.specific_path = check_output(["cygpath", self.specific_path]).strip()
             except:
                 print("[RSync] Failed to run cygpath to convert local file path. Can't continue.")
                 return
@@ -460,7 +471,7 @@ class Rsync(threading.Thread):
             "LANG=C which rsync"
         ]
         try:
-            self.rsync_path = subprocess.check_output(check_command, universal_newlines=True, timeout=self.timeout, stderr=subprocess.STDOUT).rstrip()
+            self.rsync_path = check_output(check_command, timeout=self.timeout, stderr=subprocess.STDOUT).rstrip()
             if not self.rsync_path.endswith("/rsync"):
                 console_show(self.view.window())
                 message = "ERROR: Unable to locate rsync on "+self.destination.get("remote_host")
@@ -491,7 +502,7 @@ class Rsync(threading.Thread):
             ]
             try:
                 console_print(self.destination.get("remote_host"), self.prefix, "Running pre command: "+self.destination.get("remote_pre_command"))
-                output = subprocess.check_output(pre_command, universal_newlines=True, stderr=subprocess.STDOUT)
+                output = check_output(pre_command, stderr=subprocess.STDOUT)
                 if output:
                     output = re.sub(r'\n$', "", output)
                     console_print(self.destination.get("remote_host"), self.prefix, output)
@@ -529,7 +540,7 @@ class Rsync(threading.Thread):
 
         # Execute rsync
         try:
-            output = subprocess.check_output(rsync_command, universal_newlines=True, stderr=subprocess.STDOUT)
+            output = check_output(rsync_command, stderr=subprocess.STDOUT)
             # Fix rsync output to include relative remote path
             if self.specific_path and os.path.isfile(self.specific_path):
                 destination_file_relative = re.sub(self.destination.get("remote_path")+'/?', '', destination_path)
@@ -557,7 +568,7 @@ class Rsync(threading.Thread):
             ]
             try:
                 console_print(self.destination.get("remote_host"), self.prefix, "Running post command: "+self.destination.get("remote_post_command"))
-                output = subprocess.check_output(post_command, universal_newlines=True, stdin=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+                output = check_output(post_command, stdin=subprocess.DEVNULL, stderr=subprocess.STDOUT)
                 if output:
                     output = re.sub(r'\n$', "", output)
                     console_print(self.destination.get("remote_host"), self.prefix, output)
