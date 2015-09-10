@@ -49,7 +49,12 @@ Be aware that the `--delete` option will destroy the directoy you speficy in `re
 
 ### Example `.sublime-project` file
 
-```yaml
+Note that the `.sublime-project` is a JSON file, and as such comments are not supported.
+The comments below have just been added to document the individual sections.
+
+When you initialize your project via `Initialize Settings` the plugin will add the `rsync_ssh` config to your project file.
+
+```json
 {
     "folders":
     [
@@ -64,10 +69,10 @@ Be aware that the `--delete` option will destroy the directoy you speficy in `re
         "rsync_ssh":
         {
             # To use non-standard ssh
-            "ssh_binary": "/usr/local/bin/ssh"
+            "ssh_binary": "/usr/local/bin/ssh",
 
             # To disable sync on save set 'sync_on_save' to false
-            "sync_on_save": true
+            "sync_on_save": true,
 
             # Rsync options
             "options":
