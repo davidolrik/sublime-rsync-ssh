@@ -1,0 +1,5 @@
+Rsync SSH 1.7.0
+---------------
+
+- Windows(cygwin) support! (Rafal Chlodnicki)
+- Fixed #32: Destination path can now contain spaces.

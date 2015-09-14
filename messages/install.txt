@@ -10,10 +10,6 @@ please see:
 
     https://packagecontrol.io/packages/Rsync%20SSH
 
-To get notifications on OS X, please install this additional plugin:
-
-    https://packagecontrol.io/packages/Terminal%20Notifier
-
 If you find a bug, please report it here:
 
     https://github.com/davidolrik/sublime-rsync-ssh/issues
