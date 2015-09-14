@@ -521,7 +521,7 @@ class Rsync(threading.Thread):
 
         rsync_command.extend([
             source_path,
-            self.destination.get("remote_user")+"@"+self.destination.get("remote_host")+":"+destination_path
+            self.destination.get("remote_user")+"@"+self.destination.get("remote_host")+":'"+destination_path+"'"
         ])
 
         # Add excludes
