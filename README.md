@@ -78,7 +78,10 @@ When you initialize your project via `Initialize Settings` the plugin will add t
             "options":
             [
                 "--dry-run",
-                "--delete"
+                "--delete",
+                // Override how we handle permissions, useful for platforms that doesn't support Unix permissions.
+                // Here we tell rsync to use the umask on the destination to set the permissions
+                "--no-perms", "--chmod=ugo=rwX"
             ],
             // "Stuff we don't want rsync to copy"
             "excludes":
