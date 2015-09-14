@@ -81,6 +81,10 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
                 "--dry-run",
                 "--delete"
             ]
+            # Add sane permission defaults when using windows (cygwin)
+            if sublime.platform() == "windows":
+                project_data['settings']["rsync_ssh"]["options"].insert(0, "--chmod=ugo=rwX")
+                project_data['settings']["rsync_ssh"]["options"].insert(0, "--no-perms")
 
             project_data['settings']["rsync_ssh"]["remotes"] = {}
 
