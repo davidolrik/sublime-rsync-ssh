@@ -164,6 +164,12 @@ You install this plugin either by cloning this project directly, or by installin
 
 You probably forgot to remove `--dry-run` from the rsync options in the project configuration file.
 
+### I'm on Windows, how do I get sane permissions on the destination
+
+As Windows doesn't have native support for [Unix permissions](https://en.wikipedia.org/wiki/File_system_permissions#Traditional_Unix_permissions), you can't rely on the default sync mode of "preserve permissions".
+Instead you can turn off the persission sync with `--no-perms` and then use `--chmod=ugo=rwX` to make `rsync` use the umask on the destination to determine which permissions a file should have.
+When you initialize the `rsync-ssh` configuration this will be automatically added to the configuration as shown in the example above.
+
 ## TODO
 
 - Rename `remotes` to `folders` (Calling them remotes is kinda silly).
