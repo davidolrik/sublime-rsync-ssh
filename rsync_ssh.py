@@ -443,8 +443,14 @@ class Rsync(threading.Thread):
                 self.local_path = check_output(["cygpath", self.local_path]).strip()
                 if self.specific_path:
                     self.specific_path = check_output(["cygpath", self.specific_path]).strip()
-            except:
-                print("[RSync] Failed to run cygpath to convert local file path. Can't continue.")
+            except subprocess.CalledProcessError as error:
+                console_show(self.view.window())
+                console_print(
+                    self.destination.get("remote_host"),
+                    self.prefix,
+                    "ERROR: Failed to run cygpath to convert local file path. Can't continue."
+                )
+                console_print(self.destination.get("remote_host"), self.prefix, error.output)
                 return
 
         # Skip disabled destinations, unless we explicitly force a sync (e.g. for specific destinations)
