@@ -49,8 +49,8 @@ Be aware that the `--delete` option will destroy the directoy you speficy in `re
 
 ### Example `.sublime-project` file
 
-Note that the `.sublime-project` is a JSON file, and as such comments are not supported.
-The comments below have just been added to document the individual sections (All keys named `"#"`should be left out).
+Note that the `.sublime-project` is a JSON file, and as such comments are not supported, fortunately for us Sublime Text uses a a rather lax parser that supports `//` comments.
+The comments below have just been added to document the individual sections .
 
 When you initialize your project via `Initialize Settings` the plugin will add the `rsync_ssh` config to your project file.
 
@@ -79,7 +79,7 @@ When you initialize your project via `Initialize Settings` the plugin will add t
             [
                 "--dry-run",
                 "--delete",
-                // Override how we handle permissions, useful for platforms that doesn't support Unix permissions.
+                // Override how we handle permissions, useful for platforms that does not support Unix permissions.
                 // Here we tell rsync to use the umask on the destination to set the permissions
                 "--no-perms", "--chmod=ugo=rwX"
             ],
@@ -157,6 +157,8 @@ Press ⌘⇧F12 to sync all folders to all enabled remotes. - Note you must do t
 ## Installation
 
 You install this plugin either by cloning this project directly, or by installing it via the excellent [Package Control](http://packagecontrol.io) plugin. Press ⌘⇧P and type `Package Control: Install Package` and select it, then type the package name [rsync-ssh](https://packagecontrol.io/packages/Rsync%20SSH) and select it.
+
+To use this plugin on Windows you must install [Cygwin](https://www.cygwin.com) first.
 
 ## F.A.Q.
 
