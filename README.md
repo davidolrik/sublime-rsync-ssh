@@ -83,7 +83,7 @@ When you initialize your project via `Initialize Settings` the plugin will add t
                 // Here we tell rsync to use the umask on the destination to set the permissions
                 "--no-perms", "--chmod=ugo=rwX"
             ],
-            // Stuff we don't want rsync to copy
+            // Stuff we do not want rsync to copy
             "excludes":
             [
                 ".git*",
@@ -100,7 +100,7 @@ When you initialize your project via `Initialize Settings` the plugin will add t
                     {
                         // You can disable any destination by setting this value to 0
                         "enabled": 1,
-                        // Stuff we don't want rsync to copy, but just for this destination
+                        // Stuff we do not want rsync to copy, but just for this destination
                         "excludes":
                         [
                         ],
@@ -120,7 +120,7 @@ When you initialize your project via `Initialize Settings` the plugin will add t
                     {
                         // You can disable any destination by setting this value to 0
                         "enabled": 0,
-                        // Stuff we don't want rsync to copy, but just for this destination
+                        // Stuff we do not want rsync to copy, but just for this destination
                         "excludes":
                         [
                         ],
