@@ -1,0 +1,4 @@
+Rsync SSH 1.7.1
+---------------
+
+- Fixed #34: Respect .ssh/config when no remote_port is given.
