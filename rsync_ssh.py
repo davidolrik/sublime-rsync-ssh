@@ -440,6 +440,19 @@ class Rsync(threading.Thread):
         self.rsync_path    = ''
         threading.Thread.__init__(self)
 
+    def ssh_command_with_default_args(self):
+        """Get ssh command with defaults"""
+
+        # Build list with defaults
+        ssh_command = [
+            self.ssh_binary, "-q", "-T",
+            "-o", "ConnectTimeout="+str(self.timeout)
+        ]
+        if self.destination.get("remote_port"):
+            ssh_command.extend(["-p", str(self.destination.get("remote_port"))])
+
+        return ssh_command
+
     def run(self):
         # Cygwin version of rsync is assumed on Windows. Local path needs to be converted using cygpath.
         if sublime.platform() == "windows":
@@ -475,11 +488,11 @@ class Rsync(threading.Thread):
             destination_path = self.destination.get("remote_path") + self.specific_path.replace(self.local_path, "")
 
         # Check ssh connection, and get path of rsync on the remote host
-        check_command = [
-            self.ssh_binary, "-q", "-T", "-p", str(self.destination.get("remote_port", "22")),
+        check_command = self.ssh_command_with_default_args()
+        check_command.extend([
             self.destination.get("remote_user")+"@"+self.destination.get("remote_host"),
             "LANG=C which rsync"
-        ]
+        ])
         try:
             self.rsync_path = check_output(check_command, timeout=self.timeout, stderr=subprocess.STDOUT).rstrip()
             if not self.rsync_path.endswith("/rsync"):
@@ -505,11 +518,11 @@ class Rsync(threading.Thread):
 
         # Remote pre command
         if self.destination.get("remote_pre_command"):
-            pre_command = [
-                self.ssh_binary, "-q", "-T", "-p", str(self.destination.get("remote_port", "22")),
+            pre_command = self.ssh_command_with_default_args()
+            pre_command.extend([
                 self.destination.get("remote_user")+"@"+self.destination.get("remote_host"),
                 "$SHELL -l -c \"LANG=C cd "+self.destination.get("remote_path")+" && "+self.destination.get("remote_pre_command")+"\""
-            ]
+            ])
             try:
                 console_print(self.destination.get("remote_host"), self.prefix, "Running pre command: "+self.destination.get("remote_pre_command"))
                 output = check_output(pre_command, stderr=subprocess.STDOUT)
@@ -523,8 +536,9 @@ class Rsync(threading.Thread):
         # Build rsync command
         rsync_command = [
             "rsync", "-v", "-zar",
-            "-e", self.ssh_binary + " -q -T -p " + str(self.destination.get("remote_port", "22")) + " -o ConnectTimeout="+str(self.timeout)
+            "-e", " ".join(self.ssh_command_with_default_args())
         ]
+
         # We allow options to be specified as "--foo bar" in the config so we need to split all options on first space after the option name
         for option in self.options:
             rsync_command.extend( option.split(" ", 1) )
@@ -571,11 +585,11 @@ class Rsync(threading.Thread):
 
         # Remote post command
         if self.destination.get("remote_post_command"):
-            post_command = [
-                self.ssh_binary, "-q", "-T", "-p", str(self.destination.get("remote_port", "22")),
+            post_command = self.ssh_command_with_default_args()
+            post_command.extend([
                 self.destination.get("remote_user")+"@"+self.destination.get("remote_host"),
-                "$SHELL -l -c \"LANG=C cd "+self.destination.get("remote_path")+" && "+self.destination.get("remote_post_command")+"\""
-            ]
+                "$SHELL -l -c \"LANG=C cd \\\""+self.destination.get("remote_path")+"\\\" && "+self.destination.get("remote_post_command")+"\""
+            ])
             try:
                 console_print(self.destination.get("remote_host"), self.prefix, "Running post command: "+self.destination.get("remote_post_command"))
                 output = check_output(post_command, stdin=subprocess.DEVNULL, stderr=subprocess.STDOUT)
