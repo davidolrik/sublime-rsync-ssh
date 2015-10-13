@@ -31,6 +31,21 @@ def current_user():
     else:
         return 'username'
 
+def remote_user_host(destination):
+    user = destination.get("remote_user")
+    host = destination.get("remote_host")
+    if user:
+        return user+"@"+host
+    else:
+        return host
+def remote_user_host_port(destination):
+    user_host = remote_user_host(destination)
+    port = destination.get("remote_port")
+    if port:
+        return user_host+":"+str(port)
+    else:
+        return user_host
+
 def check_output(*args, **kwargs):
     """Runs specified system command using subprocess.check_output()"""
     startupinfo = None
@@ -174,7 +189,7 @@ class RsyncSshSyncSpecificRemoteCommand(sublime_plugin.TextCommand):
                 self.hosts = [['All', 'Sync to all destinations']]
                 for destination in destinations:
                     self.hosts.append([
-                        destination.get("remote_user")+"@"+destination.get("remote_host")+":"+str(destination.get("remote_port")),
+                        user_host_port(destination),
                         destination.get("remote_path")
                     ])
 
@@ -363,10 +378,9 @@ class RsyncSSH(threading.Thread):
                     if self.path_being_saved and os.path.isdir(self.path_being_saved) and self.path_being_saved != local_path:
                         continue
 
-                    # Build destination string (format=user@host:port:path)
+                    # Build destination string (format={user@}host{:port}:path)
                     destination_string = ":".join([
-                        destination.get("remote_user")+"@"+destination.get("remote_host"),
-                        str(destination.get("remote_port",22)),
+                        user_host_port(destination),
                         destination.get("remote_path")
                     ])
 
@@ -490,7 +504,7 @@ class Rsync(threading.Thread):
         # Check ssh connection, and get path of rsync on the remote host
         check_command = self.ssh_command_with_default_args()
         check_command.extend([
-            self.destination.get("remote_user")+"@"+self.destination.get("remote_host"),
+            user_host(self.destination),
             "LANG=C which rsync"
         ])
         try:
@@ -520,7 +534,7 @@ class Rsync(threading.Thread):
         if self.destination.get("remote_pre_command"):
             pre_command = self.ssh_command_with_default_args()
             pre_command.extend([
-                self.destination.get("remote_user")+"@"+self.destination.get("remote_host"),
+                user_host(self.destination),
                 "$SHELL -l -c \"LANG=C cd "+self.destination.get("remote_path")+" && "+self.destination.get("remote_pre_command")+"\""
             ])
             try:
@@ -545,7 +559,7 @@ class Rsync(threading.Thread):
 
         rsync_command.extend([
             source_path,
-            self.destination.get("remote_user")+"@"+self.destination.get("remote_host")+":'"+destination_path+"'"
+            user_host(self.destination)+":'"+destination_path+"'"
         ])
 
         # Add excludes
@@ -587,7 +601,7 @@ class Rsync(threading.Thread):
         if self.destination.get("remote_post_command"):
             post_command = self.ssh_command_with_default_args()
             post_command.extend([
-                self.destination.get("remote_user")+"@"+self.destination.get("remote_host"),
+                user_host(self.destination),
                 "$SHELL -l -c \"LANG=C cd \\\""+self.destination.get("remote_path")+"\\\" && "+self.destination.get("remote_post_command")+"\""
             ])
             try:
