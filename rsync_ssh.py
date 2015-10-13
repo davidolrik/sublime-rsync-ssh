@@ -190,7 +190,7 @@ class RsyncSshSyncSpecificRemoteCommand(sublime_plugin.TextCommand):
                 self.hosts = [['All', 'Sync to all destinations']]
                 for destination in destinations:
                     self.hosts.append([
-                        user_host_port(destination),
+                        remote_user_host_port(destination),
                         destination.get("remote_path")
                     ])
 
@@ -381,7 +381,7 @@ class RsyncSSH(threading.Thread):
 
                     # Build destination string (format={user@}host{:port}:path)
                     destination_string = ":".join([
-                        user_host_port(destination),
+                        remote_user_host_port(destination),
                         destination.get("remote_path")
                     ])
 
@@ -505,7 +505,7 @@ class Rsync(threading.Thread):
         # Check ssh connection, and get path of rsync on the remote host
         check_command = self.ssh_command_with_default_args()
         check_command.extend([
-            user_host(self.destination),
+            remote_user_host(self.destination),
             "LANG=C which rsync"
         ])
         try:
@@ -535,7 +535,7 @@ class Rsync(threading.Thread):
         if self.destination.get("remote_pre_command"):
             pre_command = self.ssh_command_with_default_args()
             pre_command.extend([
-                user_host(self.destination),
+                remote_user_host(self.destination),
                 "$SHELL -l -c \"LANG=C cd "+self.destination.get("remote_path")+" && "+self.destination.get("remote_pre_command")+"\""
             ])
             try:
@@ -560,7 +560,7 @@ class Rsync(threading.Thread):
 
         rsync_command.extend([
             source_path,
-            user_host(self.destination)+":'"+destination_path+"'"
+            remote_user_host(self.destination)+":'"+destination_path+"'"
         ])
 
         # Add excludes
@@ -602,7 +602,7 @@ class Rsync(threading.Thread):
         if self.destination.get("remote_post_command"):
             post_command = self.ssh_command_with_default_args()
             post_command.extend([
-                user_host(self.destination),
+                remote_user_host(self.destination),
                 "$SHELL -l -c \"LANG=C cd \\\""+self.destination.get("remote_path")+"\\\" && "+self.destination.get("remote_post_command")+"\""
             ])
             try:
