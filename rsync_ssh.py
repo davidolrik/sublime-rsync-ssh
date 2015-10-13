@@ -38,6 +38,7 @@ def remote_user_host(destination):
         return user+"@"+host
     else:
         return host
+
 def remote_user_host_port(destination):
     user_host = remote_user_host(destination)
     port = destination.get("remote_port")
