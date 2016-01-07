@@ -53,12 +53,6 @@ def rsync_ssh_settings(view=sublime.active_window().active_view()):
     settings = view.window().project_data().get('settings', {}).get("rsync_ssh")
     return settings
 
-def rchop(thestring, ending):
-    if thestring.endswith(ending):
-        return thestring[:-len(ending)]
-    return thestring
-
-
 class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
     """Sublime Command for creating the rsync_ssh block in the project settings file"""
 
@@ -397,6 +391,7 @@ class RsyncSSH(threading.Thread):
         global_options.extend(self.settings.get("options", []))
 
         connect_timeout = self.settings.get("timeout", 10)
+        status_bar_message = ''
 
         # Get path to local ssh binary
         ssh_binary = self.settings.get("ssh_binary", self.settings.get("ssh_command", "ssh"))
@@ -466,10 +461,6 @@ class RsyncSSH(threading.Thread):
 
                 # Might have mixed slash characters on Windows.
                 local_path = normalize_path(local_path)
-
-                # if fetching from remote we have to remove the project folder name to avoid ending with /bar/bar/
-                if self.from_remote and prefix.endswith(local_path):
-                    local_path = rchop(local_path, prefix)
 
                 # For each remote destination iterate over each destination and start a rsync thread
                 for destination in self.settings.get("remotes").get(remote_key):
