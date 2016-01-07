@@ -515,25 +515,25 @@ class RsyncSSH(threading.Thread):
                     threads.append(thread)
 
                     # Update status message
-                    status_bar_message = "Rsyncing to " + str(len(threads)) + " destination"
+                    from_to = "from" if self.from_remote else "to" 
+                    status_bar_message = "Rsyncing " + from_to + " " + str(len(threads)) + " destination"
                     if len(self.view.window().folders()) > 1:
                         status_bar_message += "s"
-                    self.view.set_status("00000_rsync_ssh_status", status_bar_message)
 
                     thread.start()
+
+        progress = StatusProgress(self.view, status_bar_message, "All done!")
+        progress.start()
 
         # Wait for all threads to finish
         if threads:
             for thread in threads:
                 thread.join()
-            status_bar_message = self.view.get_status("00000_rsync_ssh_status")
-            self.view.set_status("00000_rsync_ssh_status", "")
-            sublime.status_message(status_bar_message + " - done.")
+            progress.stop()
             console_print("", "", "done")
         else:
-            status_bar_message = self.view.get_status("00000_rsync_ssh_status")
-            self.view.set_status("00000_rsync_ssh_status", "")
-            sublime.status_message(status_bar_message + " - done.")
+            progress.stop()
+            console_print("", "", "done")
 
         # Unblock sync
         self.view.set_status("00000_rsync_ssh_status", "")
@@ -728,3 +728,41 @@ class Rsync(threading.Thread):
 
         # End of run
         return
+
+class StatusProgress():
+    """ Animates and indicator [=   ] in the status area """
+
+    def __init__(self, view, message, success_message):
+        self.message = message
+        self.success_message = success_message
+        self.view = view
+        self.addend = 1
+        self.size = 8
+        self.is_running = False
+
+    def start(self):
+        self.is_running = True
+        self.run(0)
+
+    def run(self, i):
+        if not self.is_running:
+            return
+
+        before = i % self.size
+        after = (self.size - 1) - before
+
+        self.view.set_status("00000_rsync_ssh_status", '%s [%s=%s]' % (self.message, ' ' * before, ' ' * after))
+
+        if not after:
+            self.addend = -1
+        if not before:
+            self.addend = 1
+        i += self.addend
+
+        if self.is_running:
+            sublime.set_timeout(lambda: self.run(i), 100)
+
+    def stop(self):
+        self.is_running = False
+        self.view.set_status("00000_rsync_ssh_status", "")
+        sublime.status_message(self.success_message)
