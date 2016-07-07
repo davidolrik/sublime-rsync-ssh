@@ -73,6 +73,7 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
             if not project_data.get('settings'):
                 project_data['settings'] = {}
             project_data['settings']["rsync_ssh"] = {}
+            project_data['settings']["rsync_ssh"]["show_osx_notifications"] = False
             project_data['settings']["rsync_ssh"]["sync_on_save"] = True
             project_data['settings']["rsync_ssh"]["excludes"] = [
                 '.git*', '_build', 'blib', 'Build'
@@ -235,6 +236,19 @@ class RsyncSshSaveCommand(sublime_plugin.EventListener):
 
         # Execute sync with the name of file being saved
         view.run_command("rsync_ssh_sync", {"path_being_saved": view.file_name()})
+
+        # print(settings.show_osx_notifications)
+        if settings.get('show_osx_notifications', True) != False:
+            # Get file name for notification
+            filename = view.file_name().split('/')
+            filename = filename[len(filename) - 1];
+
+            # Send OSX notifications after syncing
+            view.run_command("terminal_notifier", {
+                "title": "Sublime Rsync SSH",
+                "message": filename + " completely synced"
+            })
+        
 
 
 class RsyncSshSyncCommand(sublime_plugin.TextCommand):
