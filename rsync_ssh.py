@@ -267,7 +267,7 @@ class RsyncSSH(threading.Thread):
         """Set the stage"""
         self.view                     = view
         self.settings                 = settings
-        self.path_being_saved         = normalize_path(path_being_saved)
+        self.path_being_saved         = path_being_saved
         self.restrict_to_destinations = restrict_to_destinations
         self.force_sync               = force_sync
         threading.Thread.__init__(self)
@@ -286,6 +286,7 @@ class RsyncSSH(threading.Thread):
 
         # Get path to local ssh binary
         ssh_binary = self.settings.get("ssh_binary", self.settings.get("ssh_command", "ssh"))
+        rsync_binary = self.settings.get("rsync_binary", "rsync")
 
         # Each rsync is started in a separate thread
         threads = []
@@ -350,13 +351,10 @@ class RsyncSSH(threading.Thread):
                     # Remote key is current path, will only work with a single folder project
                     local_path = os.path.dirname(self.view.window().project_file_name())
 
-                # Might have mixed slash characters on Windows.
-                local_path = normalize_path(local_path)
-
                 # For each remote destination iterate over each destination and start a rsync thread
                 for destination in self.settings.get("remotes").get(remote_key):
                     # Don't sync if saving single file outside of current remotes local file path
-                    if self.path_being_saved and os.path.isfile(self.path_being_saved) and not self.path_being_saved.startswith(local_path+"/"):
+                    if self.path_being_saved and os.path.isfile(self.path_being_saved) and not self.path_being_saved.startswith(local_path+os.sep):
                         continue
 
                     # Don't sync if directory path being saved does not match the local path
@@ -384,6 +382,7 @@ class RsyncSSH(threading.Thread):
                     thread = Rsync(
                         self.view,
                         ssh_binary,
+                        rsync_binary,
                         local_path,
                         prefix,
                         destination,
@@ -426,7 +425,7 @@ class RsyncSSH(threading.Thread):
 class Rsync(threading.Thread):
     """rsync executor"""
 
-    def __init__(self, view, ssh_binary, local_path, prefix, destination, excludes, options, timeout, specific_path, force_sync=False):
+    def __init__(self, view, ssh_binary, rsync_binary, local_path, prefix, destination, excludes, options, timeout, specific_path, force_sync=False):
         self.ssh_binary    = ssh_binary
         self.view          = view
         self.local_path    = local_path
@@ -437,6 +436,7 @@ class Rsync(threading.Thread):
         self.timeout       = timeout
         self.specific_path = specific_path
         self.force_sync    = force_sync
+        self.rsync_binary  = rsync_binary
         self.rsync_path    = ''
         threading.Thread.__init__(self)
 
@@ -454,21 +454,33 @@ class Rsync(threading.Thread):
         return ssh_command
 
     def run(self):
-        # Cygwin version of rsync is assumed on Windows. Local path needs to be converted using cygpath.
+        # Cygwin version of rsync is assumed on Windows (if rsync executable path is not specified).
+        # Local path needs to be converted using cygpath in this case.
+        dir_sep = os.sep
+        cwd_to = None
         if sublime.platform() == "windows":
-            try:
-                self.local_path = check_output(["cygpath", self.local_path]).strip()
-                if self.specific_path:
-                    self.specific_path = check_output(["cygpath", self.specific_path]).strip()
-            except subprocess.CalledProcessError as error:
-                console_show(self.view.window())
-                console_print(
-                    self.destination.get("remote_host"),
-                    self.prefix,
-                    "ERROR: Failed to run cygpath to convert local file path. Can't continue."
-                )
-                console_print(self.destination.get("remote_host"), self.prefix, error.output)
-                return
+            if self.rsync_binary:
+                colon_pos = self.local_path.find(':')
+                if colon_pos >= 0:
+                    cwd_to = self.local_path[:colon_pos + 1] + os.sep
+                    self.local_path = '.' + self.local_path[colon_pos + 1:]
+                    if self.specific_path:
+                        self.specific_path = '.' + self.specific_path[colon_pos + 1:]
+            else:
+                try:
+                    self.local_path = check_output(["cygpath", normalize_path(self.local_path)]).strip()
+                    if self.specific_path:
+                        self.specific_path = check_output(["cygpath", normalize_path(self.specific_path)]).strip()
+                    dir_sep = "/"
+                except subprocess.CalledProcessError as error:
+                    console_show(self.view.window())
+                    console_print(
+                        self.destination.get("remote_host"),
+                        self.prefix,
+                        "ERROR: Failed to run cygpath to convert local file path. Can't continue."
+                    )
+                    console_print(self.destination.get("remote_host"), self.prefix, error.output)
+                    return
 
         # Skip disabled destinations, unless we explicitly force a sync (e.g. for specific destinations)
         if not self.force_sync and not self.destination.get("enabled", 1):
@@ -476,16 +488,13 @@ class Rsync(threading.Thread):
             return
 
         # What to rsync
-        source_path      = self.local_path + "/"
+        source_path      = self.local_path + dir_sep
         destination_path = self.destination.get("remote_path")
 
         # Handle specific path syncs (e.g. save events and specific remote)
-        if self.specific_path and os.path.isfile(self.specific_path) and self.specific_path.startswith(self.local_path+"/"):
-            source_path      = self.specific_path
-            destination_path = self.destination.get("remote_path") + self.specific_path.replace(self.local_path, "")
-        elif self.specific_path and os.path.isdir(self.specific_path) and self.specific_path.startswith(self.local_path+"/"):
-            source_path      = self.specific_path + "/"
-            destination_path = self.destination.get("remote_path") + self.specific_path.replace(self.local_path, "")
+        if self.specific_path and self.specific_path.startswith(source_path):
+            source_path      = self.specific_path + dir_sep if os.path.isdir(self.specific_path) else self.specific_path
+            destination_path = destination_path + normalize_path(self.specific_path.replace(self.local_path, ""))
 
         # Check ssh connection, and get path of rsync on the remote host
         check_command = self.ssh_command_with_default_args()
@@ -503,7 +512,7 @@ class Rsync(threading.Thread):
                 return
         except subprocess.TimeoutExpired as error:
             console_show(self.view.window())
-            console_print(self.destination.get("remote_host"), self.prefix, "ERROR: "+error.output)
+            console_print(self.destination.get("remote_host"), self.prefix, "ERROR ({0})(TIMEOUT): {1}".format(check_command, error.output))
             return
         except subprocess.CalledProcessError as error:
             console_show(self.view.window())
@@ -535,7 +544,7 @@ class Rsync(threading.Thread):
 
         # Build rsync command
         rsync_command = [
-            "rsync", "-v", "-zar",
+            self.rsync_binary, "-v", "-zar",
             "-e", " ".join(self.ssh_command_with_default_args())
         ]
 
@@ -564,7 +573,7 @@ class Rsync(threading.Thread):
 
         # Execute rsync
         try:
-            output = check_output(rsync_command, stderr=subprocess.STDOUT)
+            output = check_output(rsync_command, stderr=subprocess.STDOUT, cwd=cwd_to)
             # Fix rsync output to include relative remote path
             if self.specific_path and os.path.isfile(self.specific_path):
                 destination_file_relative = re.sub(self.destination.get("remote_path")+'/?', '', destination_path)
@@ -575,6 +584,7 @@ class Rsync(threading.Thread):
                 console_print(self.destination.get("remote_host"), self.prefix, "NOTICE: Nothing synced. Remove --dry-run from options to sync.")
         except subprocess.CalledProcessError as error:
             console_show(self.view.window())
+            console_print(self.destination.get("remote_host"), self.prefix, "ERROR: "+error.output+"\n")
             if  len([option for option in rsync_command if '--dry-run' in option]) != 0 and re.search("No such file or directory", error.output, re.MULTILINE):
                 console_print(
                     self.destination.get("remote_host"), self.prefix,
