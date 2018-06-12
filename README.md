@@ -45,7 +45,7 @@ First create a Sublime Project, you do this by adding one or more folders and th
 
 Then you go to the `Project` menu and select `Rsync SSH` and then `Initialize Settings`, this will add the `rsync_ssh` block to `settings` with some reasonable defaults and then open the preferences for you to edit.
 
-Be aware that the `--delete` option will destroy the directoy you speficy in `remote_path` - as a courtesy I've added `--dry-run` so you can test your config before running `rsync` for real.
+Be aware that the `--delete` option will destroy the directory you speficy in `remote_path` - as a courtesy I've added `--dry-run` so you can test your config before running `rsync` for real.
 
 ### Example `.sublime-project` file
 
