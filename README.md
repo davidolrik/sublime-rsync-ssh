@@ -71,6 +71,9 @@ When you initialize your project via `Initialize Settings` the plugin will add t
             // To use non-standard ssh specify the path here
             "ssh_binary": "/usr/local/bin/ssh",
 
+            // You may also want to specify rsync executable path, for instance, if using MSYS under Windows
+            "rsync_binary": "/usr/local/bin/rsync",
+
             // To disable sync on save set 'sync_on_save' to false
             "sync_on_save": true,
 
