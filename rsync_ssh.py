@@ -108,6 +108,7 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
                     "remote_user": current_user(),
                     "remote_pre_command": "",
                     "remote_post_command": "",
+                    "command": "rsync",
                     "enabled": 1,
                     "options": [],
                     "excludes": []
@@ -535,7 +536,7 @@ class Rsync(threading.Thread):
 
         # Build rsync command
         rsync_command = [
-            "rsync", "-v", "-zar",
+            rsync_ssh_settings(self.view).get("command", "rsync"), "-v", "-zar",
             "-e", " ".join(self.ssh_command_with_default_args())
         ]
 
