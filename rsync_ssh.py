@@ -22,6 +22,14 @@ def normalize_path(path):
     """Normalizes path to Unix format, converting back- to forward-slashes."""
     return path.strip().replace("\\", "/")
 
+def add_trailing_slash(path):
+    if path.endswith("/"):
+        return path
+    return path + "/"
+
+def remove_trailing_slash(path):
+    return path.rstrip("/")
+
 def current_user():
     """Get current username from the environment"""
     if 'USER' in os.environ:
@@ -72,21 +80,22 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
         if not project_data.get('settings', {}).get("rsync_ssh"):
             if not project_data.get('settings'):
                 project_data['settings'] = {}
-            project_data['settings']["rsync_ssh"] = {}
-            project_data['settings']["rsync_ssh"]["sync_on_save"] = True
-            project_data['settings']["rsync_ssh"]["excludes"] = [
-                '.git*', '_build', 'blib', 'Build'
-            ]
-            project_data['settings']["rsync_ssh"]["options"] = [
-                "--dry-run",
-                "--delete"
-            ]
+            project_data['settings']["rsync_ssh"] = {
+                "sync_on_save": True,
+                "command": "rsync",
+                "excludes": [
+                    '.git*', '_build', 'blib', 'Build'
+                ],
+                "options":[
+                    "--dry-run",
+                    "--delete",
+                ],
+                "remotes": {},
+            }
             # Add sane permission defaults when using windows (cygwin)
             if sublime.platform() == "windows":
                 project_data['settings']["rsync_ssh"]["options"].insert(0, "--chmod=ugo=rwX")
                 project_data['settings']["rsync_ssh"]["options"].insert(0, "--no-perms")
-
-            project_data['settings']["rsync_ssh"]["remotes"] = {}
 
             if project_data.get("folders") == None:
                 console_print("", "", "Unable to initialize settings, you must have at least one folder in your .sublime-project file.")
@@ -260,16 +269,41 @@ class RsyncSshSyncCommand(sublime_plugin.TextCommand):
         thread.start()
 
 
+class RsyncSshReverseSyncCommand(sublime_plugin.TextCommand):
+    """Sublime Command for invoking the actual sync process"""
+
+    def run(self, edit, **args): # pylint: disable=W0613
+        """Start thread with rsync to keep ui responsive"""
+
+        # Get settings
+        settings = rsync_ssh_settings(self.view)
+        if not settings:
+            console_print("","","Aborting! - rsync ssh is not configured!")
+            return
+
+        # Start command thread to keep ui responsive
+        thread = RsyncSSH(
+            self.view,
+            settings,
+            args.get("path_being_saved", ""),
+            args.get("restrict_to_destinations", None),
+            args.get("force_sync", False),
+            reverse=True,
+        )
+        thread.start()
+
+
 class RsyncSSH(threading.Thread):
     """Rsync path to remote"""
 
-    def __init__(self, view, settings, path_being_saved="", restrict_to_destinations=None, force_sync=False):
+    def __init__(self, view, settings, path_being_saved="", restrict_to_destinations=None, force_sync=False, reverse=False):
         """Set the stage"""
         self.view                     = view
         self.settings                 = settings
         self.path_being_saved         = normalize_path(path_being_saved)
         self.restrict_to_destinations = restrict_to_destinations
         self.force_sync               = force_sync
+        self.reverse                  = reverse
         threading.Thread.__init__(self)
 
     def run(self):
@@ -391,7 +425,8 @@ class RsyncSSH(threading.Thread):
                         local_options,
                         connect_timeout,
                         self.path_being_saved,
-                        self.force_sync
+                        self.force_sync,
+                        reverse=self.reverse,
                     )
                     threads.append(thread)
 
@@ -426,7 +461,7 @@ class RsyncSSH(threading.Thread):
 class Rsync(threading.Thread):
     """rsync executor"""
 
-    def __init__(self, view, ssh_binary, local_path, prefix, destination, excludes, options, timeout, specific_path, force_sync=False):
+    def __init__(self, view, ssh_binary, local_path, prefix, destination, excludes, options, timeout, specific_path, force_sync=False, reverse=False):
         self.ssh_binary    = ssh_binary
         self.view          = view
         self.local_path    = local_path
@@ -438,6 +473,7 @@ class Rsync(threading.Thread):
         self.specific_path = specific_path
         self.force_sync    = force_sync
         self.rsync_path    = ''
+        self.reverse       = reverse
         threading.Thread.__init__(self)
 
     def ssh_command_with_default_args(self):
@@ -476,9 +512,6 @@ class Rsync(threading.Thread):
             return
 
         # What to rsync
-        source_path      = self.local_path + "/"
-        destination_path = self.destination.get("remote_path")
-
         # Handle specific path syncs (e.g. save events and specific remote)
         if self.specific_path and os.path.isfile(self.specific_path) and self.specific_path.startswith(self.local_path+"/"):
             source_path      = self.specific_path
@@ -486,6 +519,9 @@ class Rsync(threading.Thread):
         elif self.specific_path and os.path.isdir(self.specific_path) and self.specific_path.startswith(self.local_path+"/"):
             source_path      = self.specific_path + "/"
             destination_path = self.destination.get("remote_path") + self.specific_path.replace(self.local_path, "")
+        else:
+            source_path      = self.local_path
+            destination_path = self.destination.get("remote_path")
 
         # Check ssh connection, and get path of rsync on the remote host
         check_command = self.ssh_command_with_default_args()
@@ -543,10 +579,14 @@ class Rsync(threading.Thread):
         for option in self.options:
             rsync_command.extend( option.split(" ", 1) )
 
-        rsync_command.extend([
-            source_path,
-            self.destination.get("remote_user")+"@"+self.destination.get("remote_host")+":'"+destination_path+"'"
-        ])
+        remote_path = self.destination.get("remote_user")+"@"+self.destination.get("remote_host")+":'"+destination_path+"'"
+
+        # If reversed is set, the remote path is synced to the local path
+        if self.reverse:
+            source_path, remote_path = remote_path, source_path
+            console_print("", "", "reverse, syncing from {} to {}".format(source_path, remote_path))
+
+        rsync_command.extend([add_trailing_slash(source_path), remove_trailing_slash(remote_path)])
 
         # Add excludes
         for exclude in set(self.excludes):

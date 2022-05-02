@@ -1,0 +1,15 @@
+[
+  {
+    "caption": "Rsync SSH",
+    "children": [
+      {
+        "command": "rsync_ssh_reverse_sync",
+        "caption": "Remote -> Local"
+      },
+      {
+        "command": "rsync_ssh_sync",
+        "caption": "Local -> Remote"
+      }
+    ]
+  }
+]
