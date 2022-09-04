@@ -9,6 +9,9 @@
                 { "command": "rsync_ssh_sync_specific_remote", "caption": "Sync to specific remote" },
                 { "command": "rsync_ssh_sync", "caption": "Sync Project to remotes" },
                 { "caption": "-" },
+                { "command": "rsync_ssh_sync_from_specific_remote", "caption": "Sync from specific remote" },
+                { "command": "rsync_ssh_sync_from_remote", "caption": "Sync Project from remotes" },
+                { "caption": "-" },
                 { "command": "rsync_ssh_init_settings", "caption": "Initialize settings" }
             ]
 

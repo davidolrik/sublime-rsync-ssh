@@ -53,7 +53,6 @@ def rsync_ssh_settings(view=sublime.active_window().active_view()):
     settings = view.window().project_data().get('settings', {}).get("rsync_ssh")
     return settings
 
-
 class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
     """Sublime Command for creating the rsync_ssh block in the project settings file"""
 
@@ -238,8 +237,34 @@ class RsyncSshSaveCommand(sublime_plugin.EventListener):
         view.run_command("rsync_ssh_sync", {"path_being_saved": view.file_name()})
 
 
+
+
 class RsyncSshSyncCommand(sublime_plugin.TextCommand):
     """Sublime Command for invoking the actual sync process"""
+
+    def run(self, edit, **args): # pylint: disable=W0613
+        """Start thread with rsync to keep ui responsive"""
+
+        # Get settings
+        settings = rsync_ssh_settings(self.view)
+
+        if not settings:
+            console_print("","","Aborting! - rsync ssh is not configured!")
+            return
+
+        # Start command thread to keep ui responsive
+        thread = RsyncSSH(
+            self.view,
+            settings,
+            args.get("path_being_saved", ""),
+            args.get("restrict_to_destinations", None),
+            args.get("force_sync", False),
+            args.get("from_remote", False),
+        )
+        thread.start()
+
+class RsyncSshSyncFromRemoteCommand(sublime_plugin.TextCommand):
+    """Sublime Command for invoking the remote sync process"""
 
     def run(self, edit, **args): # pylint: disable=W0613
         """Start thread with rsync to keep ui responsive"""
@@ -256,21 +281,104 @@ class RsyncSshSyncCommand(sublime_plugin.TextCommand):
             settings,
             args.get("path_being_saved", ""),
             args.get("restrict_to_destinations", None),
-            args.get("force_sync", False)
+            args.get("force_sync", False),
+            True
         )
-        thread.start()
+        thread.start()        
+
+class RsyncSshSyncFromSpecificRemoteCommand(sublime_plugin.TextCommand):
+    """Start rsync from a specific remote"""
+
+    remotes = []
+    hosts   = []
+
+    def run(self, edit, **args): # pylint: disable=W0613
+        """Let user select from which remote/destination sync using the quick panel"""
+
+        settings = rsync_ssh_settings(self.view)
+        if not settings:
+            console_print("","","Aborting! - rsync ssh is not configured!")
+            return
+
+        self.remotes = []
+        for remote_key in settings.get("remotes").keys():
+            for destination in settings.get("remotes").get(remote_key):
+                # print(remote)
+                if destination.get("enabled", True) == True:
+                    if remote_key not in self.remotes:
+                        self.remotes.append(remote_key)
+
+        selected_remote = self.view.settings().get("rsync_ssh_sync_specific_remote", 0)
+        self.view.window().show_quick_panel(self.remotes, self.sync_remote, sublime.MONOSPACE_FONT, selected_remote)
+
+    def sync_remote(self, choice):
+        """Call rsync_ssh_command with the selected remote"""
+
+        if choice >= 0:
+            self.view.settings().set("rsync_ssh_sync_specific_remote", choice)
+
+            destinations = rsync_ssh_settings(self.view).get("remotes").get(self.remotes[choice])
+
+            # Remote has no destinations, which makes no sense
+            if len(destinations) == 0:
+                return
+            # If remote only has one destination, we'll just initiate the sync
+            elif len(destinations) == 1:
+                # Start command thread to keep ui responsive
+                self.view.run_command(
+                    "rsync_ssh_sync", {
+                        "path_being_saved": self.remotes[choice],
+                        "restrict_to_destinations": None,
+                        "force_sync": True,
+                        "from_remote": True
+                    }
+                )
+            else:
+                self.hosts = [['All', 'Sync to all destinations']]
+                for destination in destinations:
+                    self.hosts.append([
+                        destination.get("remote_user")+"@"+destination.get("remote_host")+":"+str(destination.get("remote_port")),
+                        destination.get("remote_path")
+                    ])
+
+                selected_destination = self.view.settings().get("rsync_ssh_sync_specific_destination", 0)
+                self.view.window().show_quick_panel(self.hosts, self.sync_destination, sublime.MONOSPACE_FONT, selected_destination)
+
+    def sync_destination(self, choice):
+        """Sync single destination"""
+
+        selected_remote = self.view.settings().get("rsync_ssh_sync_specific_remote", 0)
+
+        # 0 == All destinations > 0 == specific destination
+        if choice > -1:
+            self.view.settings().set("rsync_ssh_sync_specific_destination", choice)
+
+            # Build restriction string
+            restrict_to_destinations = None if choice == 0 else self.hosts[choice][0]+":"+self.hosts[choice][1]
+
+            # Start command thread to keep ui responsive
+            self.view.run_command(
+                "rsync_ssh_sync", {
+                    "path_being_saved": self.remotes[selected_remote],
+                    "restrict_to_destinations": restrict_to_destinations,
+                    # When selecting a specific destination we'll force the sync
+                    "force_sync": False if choice == 0 else True,
+                    "from_remote": True
+                }
+            )
 
 
 class RsyncSSH(threading.Thread):
     """Rsync path to remote"""
 
-    def __init__(self, view, settings, path_being_saved="", restrict_to_destinations=None, force_sync=False):
+    def __init__(self, view, settings, path_being_saved="", restrict_to_destinations=None, force_sync=False, from_remote=False):
         """Set the stage"""
         self.view                     = view
         self.settings                 = settings
         self.path_being_saved         = normalize_path(path_being_saved)
         self.restrict_to_destinations = restrict_to_destinations
         self.force_sync               = force_sync
+        self.from_remote              = from_remote
         threading.Thread.__init__(self)
 
     def run(self):
@@ -284,6 +392,7 @@ class RsyncSSH(threading.Thread):
         global_options.extend(self.settings.get("options", []))
 
         connect_timeout = self.settings.get("timeout", 10)
+        status_bar_message = ''
 
         # Get path to local ssh binary
         ssh_binary = self.settings.get("ssh_binary", self.settings.get("ssh_command", "ssh"))
@@ -392,30 +501,31 @@ class RsyncSSH(threading.Thread):
                         local_options,
                         connect_timeout,
                         self.path_being_saved,
-                        self.force_sync
+                        self.force_sync,
+                        self.from_remote
                     )
                     threads.append(thread)
 
                     # Update status message
-                    status_bar_message = "Rsyncing to " + str(len(threads)) + " destination"
+                    from_to = "from" if self.from_remote else "to" 
+                    status_bar_message = "Rsyncing " + from_to + " " + str(len(threads)) + " destination"
                     if len(self.view.window().folders()) > 1:
                         status_bar_message += "s"
-                    self.view.set_status("00000_rsync_ssh_status", status_bar_message)
 
                     thread.start()
+
+        progress = StatusProgress(self.view, status_bar_message, "All done!")
+        progress.start()
 
         # Wait for all threads to finish
         if threads:
             for thread in threads:
                 thread.join()
-            status_bar_message = self.view.get_status("00000_rsync_ssh_status")
-            self.view.set_status("00000_rsync_ssh_status", "")
-            sublime.status_message(status_bar_message + " - done.")
+            progress.stop()
             console_print("", "", "done")
         else:
-            status_bar_message = self.view.get_status("00000_rsync_ssh_status")
-            self.view.set_status("00000_rsync_ssh_status", "")
-            sublime.status_message(status_bar_message + " - done.")
+            progress.stop()
+            console_print("", "", "done")
 
         # Unblock sync
         self.view.set_status("00000_rsync_ssh_status", "")
@@ -427,7 +537,7 @@ class RsyncSSH(threading.Thread):
 class Rsync(threading.Thread):
     """rsync executor"""
 
-    def __init__(self, view, ssh_binary, local_path, prefix, destination, excludes, options, timeout, specific_path, force_sync=False):
+    def __init__(self, view, ssh_binary, local_path, prefix, destination, excludes, options, timeout, specific_path, force_sync=False, download=False):
         self.ssh_binary    = ssh_binary
         self.view          = view
         self.local_path    = local_path
@@ -439,6 +549,7 @@ class Rsync(threading.Thread):
         self.specific_path = specific_path
         self.force_sync    = force_sync
         self.rsync_path    = ''
+        self.sync_download = download
         threading.Thread.__init__(self)
 
     def ssh_command_with_default_args(self):
@@ -544,10 +655,16 @@ class Rsync(threading.Thread):
         for option in self.options:
             rsync_command.extend( option.split(" ", 1) )
 
-        rsync_command.extend([
-            source_path,
-            self.destination.get("remote_user")+"@"+self.destination.get("remote_host")+":'"+destination_path+"'"
-        ])
+        if self.sync_download:
+            rsync_command.extend([
+                self.destination.get("remote_user")+"@"+self.destination.get("remote_host")+":'"+destination_path+"/'",
+                source_path
+            ])
+        else:
+            rsync_command.extend([
+                source_path,
+                self.destination.get("remote_user")+"@"+self.destination.get("remote_host")+":'"+destination_path+"'"
+            ])
 
         # Add excludes
         for exclude in set(self.excludes):
@@ -603,3 +720,41 @@ class Rsync(threading.Thread):
 
         # End of run
         return
+
+class StatusProgress():
+    """ Animates and indicator [=   ] in the status area """
+
+    def __init__(self, view, message, success_message):
+        self.message = message
+        self.success_message = success_message
+        self.view = view
+        self.addend = 1
+        self.size = 8
+        self.is_running = False
+
+    def start(self):
+        self.is_running = True
+        self.run(0)
+
+    def run(self, i):
+        if not self.is_running:
+            return
+
+        before = i % self.size
+        after = (self.size - 1) - before
+
+        self.view.set_status("00000_rsync_ssh_status", '%s [%s=%s]' % (self.message, ' ' * before, ' ' * after))
+
+        if not after:
+            self.addend = -1
+        if not before:
+            self.addend = 1
+        i += self.addend
+
+        if self.is_running:
+            sublime.set_timeout(lambda: self.run(i), 100)
+
+    def stop(self):
+        self.is_running = False
+        self.view.set_status("00000_rsync_ssh_status", "")
+        sublime.status_message(self.success_message)

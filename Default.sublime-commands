@@ -1,7 +1,13 @@
 [
     {
         "caption": "rsync ssh: Syncronize project to remotes",
-        "command": "rsync_ssh_sync_project",
+        "command": "rsync_ssh_sync",
+        "args": {
+        }
+    },
+    {
+        "caption": "rsync ssh: Sincronize project from remotes",
+        "command": "rsync_ssh_sync_from_remote",
         "args": {
         }
     },

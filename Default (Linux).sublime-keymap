@@ -1,4 +1,6 @@
 [
     { "keys": ["super+shift+f11"], "command": "rsync_ssh_sync_specific_remote" },
-    { "keys": ["super+shift+f12"], "command": "rsync_ssh_sync" }
+    { "keys": ["super+shift+f12"], "command": "rsync_ssh_sync" },
+    { "keys": ["super+shift+f10"], "command": "rsync_ssh_sync_from_specific_remote" },
+    { "keys": ["super+shift+f9"],  "command": "rsync_ssh_sync_from_remote" }
 ]
