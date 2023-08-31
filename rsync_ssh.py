@@ -175,8 +175,14 @@ class RsyncSshSyncSpecificRemoteCommand(sublime_plugin.TextCommand):
             else:
                 self.hosts = [['All', 'Sync to all destinations']]
                 for destination in destinations:
+                    d = []
+                    remote_user = destination.get("remote_user")
+                    if remote_user:
+                        d.append(remote_user + "@")
+                    d.append(destination.get("remote_host"))
+                    d.append(":"+str(destination.get("remote_port")))
                     self.hosts.append([
-                        destination.get("remote_user")+"@"+destination.get("remote_host")+":"+str(destination.get("remote_port")),
+                        "".join(d),
                         destination.get("remote_path")
                     ])
 
@@ -260,6 +266,26 @@ class RsyncSshSyncCommand(sublime_plugin.TextCommand):
             args.get("force_sync", False)
         )
         thread.start()
+
+
+def build_ssh_destination_string(destination):
+    """Build SSH destination string: (user@)host(:port)"""
+
+    user = destination.get("remote_user")
+    host = destination.get("remote_host")
+    port = destination.get("remote_port")
+
+    parts = [
+        user + "@" if user else None,
+        host,
+        ":" + str(port) if port else None
+    ]
+    return "".join(filter(None, parts))
+
+
+def build_rsync_destination_string(destination):
+    return (build_ssh_destination_string(destination) +
+            ":" + shlex.quote(destination.get("remote_path")))
 
 
 class RsyncSSH(threading.Thread):
@@ -365,12 +391,7 @@ class RsyncSSH(threading.Thread):
                     if self.path_being_saved and os.path.isdir(self.path_being_saved) and self.path_being_saved != local_path:
                         continue
 
-                    # Build destination string (format=user@host:port:path)
-                    destination_string = ":".join([
-                        destination.get("remote_user")+"@"+destination.get("remote_host"),
-                        str(destination.get("remote_port",22)),
-                        destination.get("remote_path")
-                    ])
+                    destination_string = build_rsync_destination_string(destination)
 
                     # If this remote has restrictions, we'll respect them
                     if self.restrict_to_destinations and destination_string not in self.restrict_to_destinations:
@@ -453,6 +474,9 @@ class Rsync(threading.Thread):
         if self.destination.get("remote_port"):
             ssh_command.extend(["-p", str(self.destination.get("remote_port"))])
 
+        custom_ssh_args =rsync_ssh_settings(self.view).get("ssh_args", [])
+        ssh_command.extend(custom_ssh_args)
+
         return ssh_command
 
     def run(self):
@@ -492,7 +516,7 @@ class Rsync(threading.Thread):
         # Check ssh connection, and get path of rsync on the remote host
         check_command = self.ssh_command_with_default_args()
         check_command.extend([
-            self.destination.get("remote_user")+"@"+self.destination.get("remote_host"),
+            build_ssh_destination_string(self.destination),
             "LANG=C which rsync"
         ])
         try:
@@ -522,7 +546,7 @@ class Rsync(threading.Thread):
         if self.destination.get("remote_pre_command"):
             pre_command = self.ssh_command_with_default_args()
             pre_command.extend([
-                self.destination.get("remote_user")+"@"+self.destination.get("remote_host"),
+                build_ssh_destination_string(self.destination),
                 "$SHELL -l -c \"LANG=C cd "+self.destination.get("remote_path")+" && "+self.destination.get("remote_pre_command")+"\""
             ])
             try:
@@ -550,7 +574,7 @@ class Rsync(threading.Thread):
 
         rsync_command.extend([
             source_path,
-            self.destination.get("remote_user")+"@"+self.destination.get("remote_host")+":'"+destination_path+"'"
+            build_rsync_destination_string(self.destination)
         ])
 
         # Add excludes
@@ -595,7 +619,7 @@ class Rsync(threading.Thread):
         if self.destination.get("remote_post_command"):
             post_command = self.ssh_command_with_default_args()
             post_command.extend([
-                self.destination.get("remote_user")+"@"+self.destination.get("remote_host"),
+                build_ssh_destination_string(self.destination),
                 "$SHELL -l -c \"LANG=C cd \\\""+self.destination.get("remote_path")+"\\\" && "+self.destination.get("remote_post_command")+"\""
             ])
             try:
