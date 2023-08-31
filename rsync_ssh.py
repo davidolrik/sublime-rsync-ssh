@@ -1,6 +1,7 @@
 """sublime-rsync-ssh: A Sublime Text 3 plugin for syncing local folders to remote servers."""
 import sublime, sublime_plugin
 import subprocess, os, re, threading
+import shlex
 
 def console_print(host, prefix, output):
     """Print message to console"""
@@ -553,8 +554,6 @@ class Rsync(threading.Thread):
         for exclude in set(self.excludes):
             rsync_command.append("--exclude="+exclude)
 
-        # Show actual rsync command in the console
-        console_print(self.destination.get("remote_host"), self.prefix, " ".join(rsync_command))
 
         # Add mkdir unless we have a --dry-run flag
         if  len([option for option in rsync_command if '--dry-run' in option]) == 0:
@@ -562,6 +561,8 @@ class Rsync(threading.Thread):
                 "--rsync-path",
                 "mkdir -p '" + os.path.dirname(destination_path) + "' && " + self.rsync_path
             ])
+        # Show actual rsync command in the console
+        console_print(self.destination.get("remote_host"), self.prefix, " ".join(shlex.quote(a) for a in rsync_command))
 
         # Execute rsync
         try:
