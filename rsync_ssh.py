@@ -558,12 +558,15 @@ class Rsync(threading.Thread):
             rsync_command.append("--exclude="+exclude)
 
 
+        rsync_path_prefix = rsync_ssh_settings(self.view).get("rsync_path_prefix", "").rstrip() + " "
+
         # Add mkdir unless we have a --dry-run flag
         if  len([option for option in rsync_command if '--dry-run' in option]) == 0:
-            rsync_command.extend([
-                "--rsync-path",
-                "mkdir -p '" + os.path.dirname(destination_path) + "' && " + self.rsync_path
-            ])
+           rsync_command.extend([
+               "--rsync-path",
+               rsync_path_prefix + "mkdir -p '" + os.path.dirname(destination_path) + "' && " + rsync_path_prefix + self.rsync_path
+           ])
+
         # Show actual rsync command in the console
         console_print(self.destination.get("remote_host"), self.prefix, " ".join(shlex.quote(a) for a in rsync_command))
 
