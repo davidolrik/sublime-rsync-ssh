@@ -283,9 +283,11 @@ def build_ssh_destination_string(destination):
     return "".join(filter(None, parts))
 
 
-def build_rsync_destination_string(destination):
+def build_rsync_destination_string(destination, path=None):
+    if path is None:
+        path = destination.get("remote_path")
     return (build_ssh_destination_string(destination) +
-            ":" + shlex.quote(destination.get("remote_path")))
+            ":" + shlex.quote(path))
 
 
 class RsyncSSH(threading.Thread):
@@ -574,7 +576,7 @@ class Rsync(threading.Thread):
 
         rsync_command.extend([
             source_path,
-            build_rsync_destination_string(self.destination)
+            build_rsync_destination_string(self.destination, destination_path)
         ])
 
         # Add excludes
