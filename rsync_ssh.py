@@ -543,7 +543,10 @@ class Rsync(threading.Thread):
 
         # We allow options to be specified as "--foo bar" in the config so we need to split all options on first space after the option name
         for option in self.options:
-            rsync_command.extend( option.split(" ", 1) )
+            if "=" not in option:
+                rsync_command.extend( option.split(" ", 1) )
+            else:
+                rsync_command.append( option )
 
         rsync_command.extend([
             source_path,
