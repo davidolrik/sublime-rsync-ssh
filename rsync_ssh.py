@@ -90,6 +90,7 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
                 project_data["settings"] = {}
             project_data["settings"]["rsync_ssh"] = {}
             project_data["settings"]["rsync_ssh"]["sync_on_save"] = True
+            project_data["settings"]["rsync_ssh"]["sync_all_on_save"] = False
             project_data["settings"]["rsync_ssh"]["ssh_args"] = []
             project_data["settings"]["rsync_ssh"]["excludes"] = [
                 ".git*",
@@ -275,8 +276,12 @@ class RsyncSshSaveCommand(sublime_plugin.EventListener):
         # Block other instances of the same file from initiating sync (e.g. files open in more than one view)
         view.set_status("00000_rsync_ssh_status", "Sync initiated")
 
+        options = {}
+        if not settings.get("sync_all_on_save", False):
+            options["path_being_saved"] = view.file_name()
+
         # Execute sync with the name of file being saved
-        view.run_command("rsync_ssh_sync", {"path_being_saved": view.file_name()})
+        view.run_command("rsync_ssh_sync", options)
 
 
 class RsyncSshSyncCommand(sublime_plugin.TextCommand):

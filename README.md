@@ -76,6 +76,10 @@ When you initialize your project via `Initialize Settings` the plugin will add t
             // To disable sync on save set 'sync_on_save' to false
             "sync_on_save": true,
 
+            // To always sync all files when saving (not just the saved file)
+            // set `sync_all_on_save` to true
+            "sync_all_on_save": true,
+
             // Rsync options
             "options":
             [
