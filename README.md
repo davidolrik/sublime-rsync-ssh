@@ -68,8 +68,10 @@ When you initialize your project via `Initialize Settings` the plugin will add t
         // This is the block the plugin adds to your project file
         "rsync_ssh":
         {
-            // To use non-standard ssh specify the path here
+            // To use non-standard ssh specify the path here ...
             "ssh_binary": "/usr/local/bin/ssh",
+            // ... and additional arguments here
+            "ssh_args": ["-F", "~/another/config/file"],
 
             // To disable sync on save set 'sync_on_save' to false
             "sync_on_save": true,

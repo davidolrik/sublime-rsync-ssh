@@ -90,6 +90,7 @@ class RsyncSshInitSettingsCommand(sublime_plugin.TextCommand):
                 project_data["settings"] = {}
             project_data["settings"]["rsync_ssh"] = {}
             project_data["settings"]["rsync_ssh"]["sync_on_save"] = True
+            project_data["settings"]["rsync_ssh"]["ssh_args"] = []
             project_data["settings"]["rsync_ssh"]["excludes"] = [
                 ".git*",
                 "_build",
