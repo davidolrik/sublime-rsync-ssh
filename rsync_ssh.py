@@ -604,52 +604,59 @@ class Rsync(threading.Thread):
                 "LANG=C which rsync",
             ]
         )
-        try:
-            self.rsync_path = check_output(check_command, timeout=self.timeout, stderr=subprocess.STDOUT).rstrip()
-            if not self.rsync_path.endswith("/rsync"):
+
+        settings = self.view.window().settings()
+        self.rsync_path = settings.get("rsync_ssh_path", "")
+        if not self.rsync_path:
+            try:
+                console_print("", "", "checking")
+                rsync_path = check_output(check_command, timeout=self.timeout, stderr=subprocess.STDOUT).rstrip()
+                if not rsync_path.endswith("/rsync"):
+                    console_show(self.view.window())
+                    message = "ERROR: Unable to locate rsync on " + self.destination.get("remote_host")
+                    console_print(self.destination.get("remote_host"), self.prefix, message)
+                    console_print(
+                        self.destination.get("remote_host"),
+                        self.prefix,
+                        rsync_path,
+                    )
+                    return
+                settings.set("rsync_ssh_path", rsync_path)
+                self.rsync_path = rsync_path
+            except subprocess.TimeoutExpired as error:
                 console_show(self.view.window())
-                message = "ERROR: Unable to locate rsync on " + self.destination.get("remote_host")
-                console_print(self.destination.get("remote_host"), self.prefix, message)
-                console_print(
-                    self.destination.get("remote_host"),
-                    self.prefix,
-                    self.rsync_path,
-                )
-                return
-        except subprocess.TimeoutExpired as error:
-            console_show(self.view.window())
-            console_print(
-                self.destination.get("remote_host"),
-                self.prefix,
-                "ERROR: " + error.output,
-            )
-            return
-        except subprocess.CalledProcessError as error:
-            console_show(self.view.window())
-            if error.returncode == 255 and error.output == "":
-                console_print(
-                    self.destination.get("remote_host"),
-                    self.prefix,
-                    "ERROR: ssh check command failed, have you accepted the remote host key?",
-                )
-                console_print(
-                    self.destination.get("remote_host"),
-                    self.prefix,
-                    "       Try running the ssh command manually in a terminal:",
-                )
-                console_print(
-                    self.destination.get("remote_host"),
-                    self.prefix,
-                    "       " + " ".join(error.cmd),
-                )
-            else:
                 console_print(
                     self.destination.get("remote_host"),
                     self.prefix,
                     "ERROR: " + error.output,
                 )
+                return
+            except subprocess.CalledProcessError as error:
+                console_show(self.view.window())
+                if error.returncode == 255 and error.output == "":
+                    console_print(
+                        self.destination.get("remote_host"),
+                        self.prefix,
+                        "ERROR: ssh check command failed, have you accepted the remote host key?",
+                    )
+                    console_print(
+                        self.destination.get("remote_host"),
+                        self.prefix,
+                        "       Try running the ssh command manually in a terminal:",
+                    )
+                    console_print(
+                        self.destination.get("remote_host"),
+                        self.prefix,
+                        "       " + " ".join(error.cmd),
+                    )
+                else:
+                    console_print(
+                        self.destination.get("remote_host"),
+                        self.prefix,
+                        "ERROR: " + error.output,
+                    )
 
-            return
+                return
 
         # Remote pre command
         if self.destination.get("remote_pre_command"):
