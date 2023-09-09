@@ -21,6 +21,7 @@ class TestFunctions(TestCase):
         self.assertEquals(console_print("", "prefix", "output"), "[rsync-ssh] prefix: output")
 
     def test_console_show(self):
+        sublime.active_window().run_command("show_panel", {"panel": "output.UnitTesting", "toggle": False})
         self.assertEquals(sublime.active_window().active_panel(), "output.UnitTesting")
         rsync_ssh.console_show()
         self.assertEquals(sublime.active_window().active_panel(), "console")
