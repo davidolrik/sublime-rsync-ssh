@@ -1,0 +1,29 @@
+name: test
+
+on: [push, pull_request]
+
+jobs:
+  run-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        st-version: [3, 4]
+        # macOS-latest is currently broken:
+        #         Run bash $GITHUB_ACTION_PATH/../../scripts/install_package_control.sh
+        # creating Package Control.sublime-settings
+        # /Users/runner/work/_actions/SublimeText/UnitTesting/v1/actions/setup/../../scripts/install_package_control.sh: line 67:  1308 Terminated: 15          subl
+        # /Users/runner/work/_actions/SublimeText/UnitTesting/v1/actions/setup/../../scripts/install_package_control.sh: line 67:  1883 Terminated: 15          subl
+        # /Users/runner/work/_actions/SublimeText/UnitTesting/v1/actions/setup/../../scripts/install_package_control.sh: line 67:  2055 Terminated: 15          subl
+        # ....................................Timeout: Fail to install Package Control.
+        # os: ["ubuntu-latest", "macOS-latest", "windows-latest"]
+        os: ["ubuntu-latest", "windows-latest"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: SublimeText/UnitTesting/actions/setup@v1
+        with:
+          sublime-text-version: ${{ matrix.st-version }}
+      - uses: SublimeText/UnitTesting/actions/run-tests@v1
+        with:
+          coverage: true
+          codecov-upload: true

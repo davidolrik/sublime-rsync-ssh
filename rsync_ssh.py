@@ -21,6 +21,8 @@ def console_print(host, prefix, output):
     output = "[rsync-ssh] " + host + output.replace("\n", "\n[rsync-ssh] " + host)
     print(output)
 
+    return output
+
 
 def console_show(window=sublime.active_window()):
     """Show console panel"""
