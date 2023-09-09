@@ -8,7 +8,15 @@ jobs:
       fail-fast: false
       matrix:
         st-version: [3, 4]
-        os: ["ubuntu-latest", "macOS-latest", "windows-latest"]
+        # macOS-latest is currently broken:
+        #         Run bash $GITHUB_ACTION_PATH/../../scripts/install_package_control.sh
+        # creating Package Control.sublime-settings
+        # /Users/runner/work/_actions/SublimeText/UnitTesting/v1/actions/setup/../../scripts/install_package_control.sh: line 67:  1308 Terminated: 15          subl
+        # /Users/runner/work/_actions/SublimeText/UnitTesting/v1/actions/setup/../../scripts/install_package_control.sh: line 67:  1883 Terminated: 15          subl
+        # /Users/runner/work/_actions/SublimeText/UnitTesting/v1/actions/setup/../../scripts/install_package_control.sh: line 67:  2055 Terminated: 15          subl
+        # ....................................Timeout: Fail to install Package Control.
+        # os: ["ubuntu-latest", "macOS-latest", "windows-latest"]
+        os: ["ubuntu-latest", "windows-latest"]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
