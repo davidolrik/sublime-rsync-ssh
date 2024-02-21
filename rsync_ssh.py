@@ -22,8 +22,10 @@ def console_print(host, prefix, output):
     print(output)
 
 
-def console_show(window=sublime.active_window()):
+def console_show(window=None):
     """Show console panel"""
+    if window is None:
+        sublime.active_window()
     window.run_command("show_panel", {"panel": "console", "toggle": False})
 
 
