@@ -628,7 +628,7 @@ class Rsync(threading.Thread):
                 console_print(
                     self.destination.get("remote_host"),
                     self.prefix,
-                    "ERROR: " + error.output,
+                    "ERROR: " + (error.output or ''),
                 )
                 return
             except subprocess.CalledProcessError as error:
